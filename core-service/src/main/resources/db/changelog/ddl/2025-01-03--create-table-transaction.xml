@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.33.xsd">
+
+    <changeSet id="2025-01-03--create-table-transaction" author="student">
+        <createTable tableName="transaction" schemaName="${APP_DATABASE_SCHEMA}">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="from_account_id" type="bigint"/>
+            <column name="to_account_id" type="bigint"/>
+            <column name="amount" type="decimal(19,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="converted_amount" type="decimal(19,2)"/>
+            <column name="currency" type="varchar(3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_transaction_from_account_id"
+                     tableName="transaction"
+                     schemaName="${APP_DATABASE_SCHEMA}">
+            <column name="from_account_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_transaction_to_account_id"
+                     tableName="transaction"
+                     schemaName="${APP_DATABASE_SCHEMA}">
+            <column name="to_account_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

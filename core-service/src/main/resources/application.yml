@@ -1,0 +1,75 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: true
+    properties:
+      hibernate:
+        default_schema: ${APP_DATABASE_SCHEMA}
+        format_sql: true
+  liquibase:
+    enabled: true
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+    default-schema: ${APP_DATABASE_SCHEMA}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI}
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  web:
+    error:
+      include-stacktrace: never
+  kafka:
+    bootstrap-servers: ${BOOTSTRAP_SERVERS}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      auto-offset-reset: latest
+      properties:
+        spring.deserializer.value.delegate.class: >
+          org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.trusted.packages: "*"
+
+app:
+  security:
+    oidc:
+      issuer-uri: ${OIDC_ISSUER_URI}
+      client-id: ${OIDC_CLIENT_ID}
+
+currencies:
+  service:
+    url: ${CURRENCIES_SERVICE_URL}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      currencies:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    com.bank: DEBUG

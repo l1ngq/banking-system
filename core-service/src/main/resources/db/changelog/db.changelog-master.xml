@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.33.xsd">
+
+    <changeSet id="create-schema" author="student">
+        <sql>CREATE SCHEMA IF NOT EXISTS ${APP_DATABASE_SCHEMA}</sql>
+    </changeSet>
+
+    <changeSet id="initial" author="student">
+        <tagDatabase tag="initial"/>
+    </changeSet>
+
+    <include relativeToChangelogFile="true"
+             file="ddl/2025-01-01--create-table-users.xml"/>
+    <include relativeToChangelogFile="true"
+             file="ddl/2025-01-02--create-table-bank_account.xml"/>
+    <include relativeToChangelogFile="true"
+             file="ddl/2025-01-03--create-table-transaction.xml"/>
+    <include relativeToChangelogFile="true"
+             file="ddl/2025-01-04--create-table-interest_accrual_log.xml"/>
+
+</databaseChangeLog>

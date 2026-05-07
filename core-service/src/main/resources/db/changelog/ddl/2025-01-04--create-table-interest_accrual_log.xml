@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.33.xsd">
+
+    <changeSet id="2025-01-04--create-table-interest_accrual_log" author="student">
+        <createTable tableName="interest_accrual_log" schemaName="${APP_DATABASE_SCHEMA}">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="account_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="decimal(19,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="accrued_date" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_interest_accrual_log_account_id"
+                     tableName="interest_accrual_log"
+                     schemaName="${APP_DATABASE_SCHEMA}">
+            <column name="account_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_interest_accrual_log_accrued_date"
+                     tableName="interest_accrual_log"
+                     schemaName="${APP_DATABASE_SCHEMA}">
+            <column name="accrued_date"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
