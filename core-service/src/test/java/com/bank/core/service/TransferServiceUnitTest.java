@@ -3,12 +3,15 @@ package com.bank.core.service;
 import com.bank.common.enums.AccountStatus;
 import com.bank.common.enums.AccountType;
 import com.bank.common.enums.Currency;
+import com.bank.common.enums.TransactionStatus;
+import com.bank.common.enums.TransactionType;
 import com.bank.common.exception.ConflictException;
 import com.bank.common.exception.CurrencyServiceUnavailableException;
 import com.bank.common.exception.InsufficientFundsException;
 import com.bank.common.exception.NotFoundException;
 import com.bank.core.client.CurrenciesClient;
 import com.bank.core.dto.ConversionResult;
+import com.bank.core.dto.TransactionDto;
 import com.bank.core.dto.TransferRequest;
 import com.bank.core.entity.BankAccountEntity;
 import com.bank.core.entity.TransactionEntity;
@@ -27,6 +30,8 @@ import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
 import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
 import java.util.function.Function;
 import java.util.Optional;
 import java.util.UUID;
@@ -281,6 +286,55 @@ class TransferServiceUnitTest {
         assertThat(toAccount.getBalance()).isEqualByComparingTo("1400.00");
     }
 
+    @Test
+    @DisplayName("История переводов возвращается для владельца счета")
+    void getHistoryReturnsHistoryForAccountOwner() {
+        Long accountId = 1L;
+        UUID currentUserId = UUID.randomUUID();
+        BankAccountEntity account = account(accountId, currentUserId, BigDecimal.ZERO);
+        TransactionEntity firstTransaction = transaction(accountId, 2L, new BigDecimal("100.00"));
+        TransactionEntity secondTransaction = transaction(3L, accountId, new BigDecimal("50.00"));
+        TransactionDto firstDto = transactionDto(firstTransaction);
+        TransactionDto secondDto = transactionDto(secondTransaction);
+        when(bankAccountRepository.findById(accountId)).thenReturn(Optional.of(account));
+        when(transactionRepository.findAllByFromAccountIdOrToAccountIdOrderByCreatedAtDesc(accountId, accountId))
+                .thenReturn(List.of(firstTransaction, secondTransaction));
+        when(transactionMapper.toDto(firstTransaction)).thenReturn(firstDto);
+        when(transactionMapper.toDto(secondTransaction)).thenReturn(secondDto);
+
+        var response = transferService.getHistory(accountId, currentUserId);
+
+        assertThat(response.getCode()).isZero();
+        assertThat(response.getData()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("История переводов выбрасывает NotFoundException, если счет не найден")
+    void getHistoryThrowsNotFoundWhenAccountMissing() {
+        Long accountId = 1L;
+        UUID currentUserId = UUID.randomUUID();
+        when(bankAccountRepository.findById(accountId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> transferService.getHistory(accountId, currentUserId))
+                .isInstanceOf(NotFoundException.class);
+        verify(transactionRepository, never())
+                .findAllByFromAccountIdOrToAccountIdOrderByCreatedAtDesc(any(), any());
+    }
+
+    @Test
+    @DisplayName("История переводов выбрасывает ConflictException, если счет чужой")
+    void getHistoryThrowsConflictWhenAccountBelongsToAnotherUser() {
+        Long accountId = 1L;
+        UUID currentUserId = UUID.randomUUID();
+        BankAccountEntity account = account(accountId, UUID.randomUUID(), BigDecimal.ZERO);
+        when(bankAccountRepository.findById(accountId)).thenReturn(Optional.of(account));
+
+        assertThatThrownBy(() -> transferService.getHistory(accountId, currentUserId))
+                .isInstanceOf(ConflictException.class);
+        verify(transactionRepository, never())
+                .findAllByFromAccountIdOrToAccountIdOrderByCreatedAtDesc(any(), any());
+    }
+
     private BankAccountEntity account(Long id, UUID userId, BigDecimal balance) {
         return account(id, userId, balance, Currency.USD, AccountStatus.ACTIVE);
     }
@@ -294,5 +348,33 @@ class TransferServiceUnitTest {
                 .type(AccountType.CHECKING)
                 .status(status)
                 .build();
+    }
+
+    private TransactionEntity transaction(Long fromAccountId, Long toAccountId, BigDecimal amount) {
+        return TransactionEntity.builder()
+                .id(UUID.randomUUID())
+                .fromAccountId(fromAccountId)
+                .toAccountId(toAccountId)
+                .amount(amount)
+                .convertedAmount(amount)
+                .currency(Currency.USD)
+                .type(TransactionType.TRANSFER)
+                .status(TransactionStatus.COMPLETED)
+                .createdAt(Instant.now())
+                .build();
+    }
+
+    private TransactionDto transactionDto(TransactionEntity transaction) {
+        return new TransactionDto(
+                transaction.getId(),
+                transaction.getFromAccountId(),
+                transaction.getToAccountId(),
+                transaction.getAmount(),
+                transaction.getConvertedAmount(),
+                transaction.getCurrency(),
+                transaction.getType(),
+                transaction.getStatus(),
+                transaction.getCreatedAt()
+        );
     }
 }
