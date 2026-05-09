@@ -50,6 +50,10 @@ public class TransferService {
     public UniversalResponse<TransactionDto> transfer(TransferRequest request, UUID currentUserId) {
         log.info("Request to transfer: {}", request);
 
+        if (request.getFromAccountId().equals(request.getToAccountId())) {
+            throw new ConflictException("Нельзя выполнить перевод на тот же самый счёт");
+        }
+
         Long firstId = Math.min(request.getFromAccountId(), request.getToAccountId());
         Long secondId = Math.max(request.getFromAccountId(), request.getToAccountId());
 

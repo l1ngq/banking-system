@@ -1,5 +1,7 @@
 package com.bank.core.service;
 
+import com.bank.common.enums.AccountStatus;
+import com.bank.common.enums.AccountType;
 import com.bank.common.event.InterestAccrualEvent;
 import com.bank.core.entity.BankAccountEntity;
 import com.bank.core.entity.InterestAccrualLogEntity;
@@ -46,6 +48,18 @@ public class InterestAccrualService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void accrueForAccount(BankAccountEntity account) {
         log.info("Начисляем проценты для счёта id={}", account.getId());
+
+        if (account.getType() != AccountType.SAVINGS) {
+            return;
+        }
+
+        if (account.getStatus() != AccountStatus.ACTIVE) {
+            return;
+        }
+
+        if (account.getBalance() == null || account.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
 
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
 
