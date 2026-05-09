@@ -10,7 +10,9 @@ import com.bank.core.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -22,6 +24,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
 @ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 abstract class BasePostgresIntegrationTest {
 
     @Container
@@ -54,6 +57,9 @@ abstract class BasePostgresIntegrationTest {
     @MockitoBean
     protected CurrenciesClient currenciesClient;
 
+    @MockitoBean
+    protected ProducerFactory<Object, Object> producerFactory;
+
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
         registry.add("DATABASE_URL", postgres::getJdbcUrl);
@@ -65,6 +71,11 @@ abstract class BasePostgresIntegrationTest {
         registry.add("CORS_ALLOWED_ORIGINS", () -> "http://localhost:3000");
         registry.add("BOOTSTRAP_SERVERS", () -> "localhost:9092");
         registry.add("CURRENCIES_SERVICE_URL", () -> "http://localhost:8081");
+        registry.add("spring.liquibase.enabled", () -> "true");
+        registry.add("spring.liquibase.default-schema", () -> "public");
+        registry.add("spring.liquibase.parameters.APP_DATABASE_SCHEMA", () -> "public");
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
+        registry.add("spring.jpa.properties.hibernate.default_schema", () -> "public");
         registry.add("spring.kafka.listener.auto-startup", () -> "false");
         registry.add("spring.task.scheduling.enabled", () -> "false");
     }

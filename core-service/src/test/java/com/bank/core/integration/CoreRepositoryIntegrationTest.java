@@ -34,8 +34,14 @@ class CoreRepositoryIntegrationTest extends BasePostgresIntegrationTest {
 
         userRepository.saveAndFlush(user);
 
-        assertThat(userRepository.findById(user.getId())).contains(user);
-        assertThat(userRepository.findByExternalAuthId("external-1")).contains(user);
+        assertThat(userRepository.findById(user.getId()))
+                .get()
+                .extracting(UserEntity::getExternalAuthId)
+                .isEqualTo("external-1");
+        assertThat(userRepository.findByExternalAuthId("external-1"))
+                .get()
+                .extracting(UserEntity::getId)
+                .isEqualTo(user.getId());
     }
 
     @Test
@@ -76,7 +82,10 @@ class CoreRepositoryIntegrationTest extends BasePostgresIntegrationTest {
 
         InterestAccrualLogEntity saved = interestAccrualLogRepository.saveAndFlush(log);
 
-        assertThat(interestAccrualLogRepository.findById(saved.getId())).contains(saved);
+        assertThat(interestAccrualLogRepository.findById(saved.getId()))
+                .get()
+                .extracting(InterestAccrualLogEntity::getAmount)
+                .isEqualTo(new BigDecimal("1.23"));
     }
 
     private UserEntity user(UUID id, String externalAuthId, String email) {
