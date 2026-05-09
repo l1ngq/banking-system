@@ -13,6 +13,6 @@
     </changeSet>
 
     <include relativeToChangelogFile="true"
-             file="ddl/2025-01-01--create-table-exchange_rate.xml"/>
+             file="ddl/011--create-table-exchange-rate.xml"/>
 
 </databaseChangeLog>

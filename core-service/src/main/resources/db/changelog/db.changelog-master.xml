@@ -13,12 +13,12 @@
     </changeSet>
 
     <include relativeToChangelogFile="true"
-             file="ddl/2025-01-01--create-table-users.xml"/>
+             file="ddl/001-create-table-users.xml"/>
     <include relativeToChangelogFile="true"
-             file="ddl/2025-01-02--create-table-bank_account.xml"/>
+             file="ddl/002--create-table-bank-account.xml"/>
     <include relativeToChangelogFile="true"
-             file="ddl/2025-01-03--create-table-transaction.xml"/>
+             file="ddl/003--create-table-transaction.xml"/>
     <include relativeToChangelogFile="true"
-             file="ddl/2025-01-04--create-table-interest_accrual_log.xml"/>
+             file="ddl/004--create-table-interest-accrual-log.xml"/>
 
 </databaseChangeLog>
