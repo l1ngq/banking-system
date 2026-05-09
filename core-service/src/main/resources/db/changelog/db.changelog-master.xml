@@ -13,7 +13,7 @@
     </changeSet>
 
     <include relativeToChangelogFile="true"
-             file="ddl/001-create-table-users.xml"/>
+             file="ddl/001--create-table-users.xml"/>
     <include relativeToChangelogFile="true"
              file="ddl/002--create-table-bank-account.xml"/>
     <include relativeToChangelogFile="true"
