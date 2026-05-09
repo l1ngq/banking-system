@@ -10,7 +10,7 @@ import java.util.UUID;
 @Repository
 public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
-    Optional<UserEntity> findByKeycloakId(String keycloakId);
+    Optional<UserEntity> findByExternalAuthId(String externalAuthId);
 
-    boolean existsByKeycloakId(String keycloakId);
+    boolean existsByExternalAuthId(String externalAuthId);
 }

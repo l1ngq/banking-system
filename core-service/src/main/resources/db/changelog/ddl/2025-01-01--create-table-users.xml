@@ -4,12 +4,12 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.33.xsd">
 
-    <changeSet id="2025-01-01--create-table-users" author="student">
+    <changeSet id="2026-01-05--create-table-users" author="student">
         <createTable tableName="users" schemaName="${APP_DATABASE_SCHEMA}">
             <column name="id" type="uuid">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="keycloak_id" type="varchar(255)">
+            <column name="external_auth_id" type="varchar(255)">
                 <constraints nullable="false" unique="true"/>
             </column>
             <column name="email" type="varchar(255)">
@@ -20,11 +20,11 @@
             </column>
         </createTable>
 
-        <createIndex indexName="idx_users_keycloak_id"
+        <createIndex indexName="idx_users_external_auth_id"
                      tableName="users"
                      schemaName="${APP_DATABASE_SCHEMA}"
                      unique="true">
-            <column name="keycloak_id"/>
+            <column name="external_auth_id"/>
         </createIndex>
 
         <createIndex indexName="idx_users_email"

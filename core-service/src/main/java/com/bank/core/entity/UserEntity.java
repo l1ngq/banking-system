@@ -32,8 +32,8 @@ public class UserEntity {
     @Builder.Default
     private UUID id = UUID.randomUUID();
 
-    @Column(name = "keycloak_id", nullable = false, unique = true)
-    private String keycloakId;
+    @Column(name = "external_auth_id", nullable = false, unique = true)
+    private String externalAuthId;
 
     @Column(name = "email", nullable = false, unique = true)
     private String email;
