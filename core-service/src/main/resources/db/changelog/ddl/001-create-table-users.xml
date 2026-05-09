@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.33.xsd">
+
+    <changeSet id="001--create-table-users" author="student">
+        <createTable tableName="users" schemaName="${APP_DATABASE_SCHEMA}">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="external_auth_id" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="email" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_users_external_auth_id"
+                     tableName="users"
+                     schemaName="${APP_DATABASE_SCHEMA}"
+                     unique="true">
+            <column name="external_auth_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_users_email"
+                     tableName="users"
+                     schemaName="${APP_DATABASE_SCHEMA}"
+                     unique="true">
+            <column name="email"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
