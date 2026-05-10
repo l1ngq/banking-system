@@ -24,8 +24,8 @@ public class CurrencyController {
 
     @GetMapping("/rate")
     public UniversalResponse<RateDto> getRate(
-            @RequestParam String from,
-            @RequestParam String to) {
+            @RequestParam("from") String from,
+            @RequestParam("to") String to) {
         log.info("Request to get currency rate from {} to {}", from, to);
         BigDecimal rate = service.getRate(from, to);
         return new UniversalResponse<>(new RateDto(from, to, rate, Instant.now()));
@@ -33,9 +33,9 @@ public class CurrencyController {
 
     @GetMapping("/convert")
     public UniversalResponse<ConversionResult> convert(
-            @RequestParam String from,
-            @RequestParam String to,
-            @RequestParam BigDecimal amount) {
+            @RequestParam("from") String from,
+            @RequestParam("to") String to,
+            @RequestParam("amount") BigDecimal amount) {
         log.info("Request to convert {} from {} to {}", amount, from, to);
         return new UniversalResponse<>(service.convert(from, to, amount));
     }
