@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${DATABASE_URL}
-    username: ${DATABASE_USERNAME}
-    password: ${DATABASE_PASSWORD}
+    url: ${CORE_DATABASE_URL:jdbc:postgresql://localhost:5433/core_db}
+    username: ${DATABASE_USERNAME:bank}
+    password: ${DATABASE_PASSWORD:bank}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -11,26 +11,31 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        default_schema: ${APP_DATABASE_SCHEMA}
+        default_schema: ${APP_DATABASE_SCHEMA:banking}
         format_sql: true
   liquibase:
     enabled: true
     change-log: classpath:/db/changelog/db.changelog-master.xml
-    default-schema: ${APP_DATABASE_SCHEMA}
+    default-schema: ${APP_DATABASE_SCHEMA:banking}
     parameters:
-      APP_DATABASE_SCHEMA: ${APP_DATABASE_SCHEMA}
+      APP_DATABASE_SCHEMA: ${APP_DATABASE_SCHEMA:banking}
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${OIDC_ISSUER_URI}
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:9999/realms/dev}
     cors:
-      allowed-origins: ${CORS_ALLOWED_ORIGINS}
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   web:
     error:
       include-stacktrace: never
+  task:
+    scheduling:
+      enabled: ${SCHEDULING_ENABLED:false}
   kafka:
-    bootstrap-servers: ${BOOTSTRAP_SERVERS}
+    bootstrap-servers: ${BOOTSTRAP_SERVERS:localhost:9092}
+    listener:
+      auto-startup: ${KAFKA_LISTENER_AUTO_STARTUP:false}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -46,12 +51,12 @@ spring:
 app:
   security:
     oidc:
-      issuer-uri: ${OIDC_ISSUER_URI}
-      client-id: ${OIDC_CLIENT_ID}
+      issuer-uri: ${OIDC_ISSUER_URI:http://localhost:9999/realms/dev}
+      client-id: ${OIDC_CLIENT_ID:dev-client}
 
 currencies:
   service:
-    url: ${CURRENCIES_SERVICE_URL}
+    url: ${CURRENCIES_SERVICE_URL:http://localhost:8081}
 
 resilience4j:
   circuitbreaker:

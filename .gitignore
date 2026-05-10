@@ -1,8 +1,11 @@
 HELP.md
 target/
+**/target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+out/
+**/out/
 
 ### STS ###
 .apt_generated
@@ -15,6 +18,7 @@ target/
 
 ### IntelliJ IDEA ###
 .idea
+.idea/workspace.xml
 *.iws
 *.iml
 *.ipr
@@ -35,4 +39,5 @@ build/
 ### Env ###
 .env
 .env.local
+*.log
 

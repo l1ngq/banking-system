@@ -45,6 +45,7 @@ abstract class BaseCurrenciesPostgresIntegrationTest {
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
         registry.add("DATABASE_URL", postgres::getJdbcUrl);
+        registry.add("CURRENCIES_DATABASE_URL", postgres::getJdbcUrl);
         registry.add("DATABASE_USERNAME", postgres::getUsername);
         registry.add("DATABASE_PASSWORD", postgres::getPassword);
         registry.add("APP_DATABASE_SCHEMA", () -> "public");
