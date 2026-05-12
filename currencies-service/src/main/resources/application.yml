@@ -23,7 +23,7 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
   cache:
-    type: redis
+    type: ${CACHE_TYPE:redis}
   web:
     error:
       include-stacktrace: never

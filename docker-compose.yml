@@ -22,6 +22,7 @@ services:
   postgres-currencies:
     image: postgres:18
     container_name: postgres-currencies
+    restart: no
     ports:
       - "5434:5432"
     environment:
@@ -36,6 +37,20 @@ services:
       retries: 5
     volumes:
       - postgres-currencies-data:/var/lib/postgresql/data
+    networks:
+      - banking-network
+
+  redis:
+    image: redis:8.6.0
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory-policy volatile-ttl
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - banking-network
 
