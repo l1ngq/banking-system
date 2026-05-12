@@ -50,6 +50,10 @@ public class TransferService {
     public UniversalResponse<TransactionDto> transfer(TransferRequest request, UUID currentUserId) {
         log.info("Request to transfer: {}", request);
 
+        if (request.getFromAccountId().equals(request.getToAccountId())) {
+            throw new ConflictException("Нельзя выполнить перевод на тот же самый счёт");
+        }
+
         Long firstId = Math.min(request.getFromAccountId(), request.getToAccountId());
         Long secondId = Math.max(request.getFromAccountId(), request.getToAccountId());
 
@@ -114,8 +118,16 @@ public class TransferService {
         return new UniversalResponse<>(transactionMapper.toDto(transaction));
     }
 
-    public UniversalResponse<List<TransactionDto>> getHistory(Long accountId) {
+    public UniversalResponse<List<TransactionDto>> getHistory(Long accountId, UUID currentUserId) {
         log.info("Request to get transfer history by accountId: {}", accountId);
+
+        BankAccountEntity account = bankAccountRepository.findById(accountId)
+                .orElseThrow(() -> new NotFoundException("Счёт не найден: " + accountId));
+
+        if (!account.getUserId().equals(currentUserId)) {
+            throw new ConflictException("Счёт не принадлежит текущему пользователю");
+        }
+
         List<TransactionDto> transactions = transactionRepository
                 .findAllByFromAccountIdOrToAccountIdOrderByCreatedAtDesc(accountId, accountId)
                 .stream()

@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5434/currencies_db}
+    url: ${CURRENCIES_DATABASE_URL:jdbc:postgresql://localhost:5434/currencies_db}
     username: ${DATABASE_USERNAME:bank}
     password: ${DATABASE_PASSWORD:bank}
     driver-class-name: org.postgresql.Driver
@@ -27,6 +27,9 @@ spring:
   web:
     error:
       include-stacktrace: never
+  task:
+    scheduling:
+      enabled: ${SCHEDULING_ENABLED:false}
 
 springdoc:
   api-docs:

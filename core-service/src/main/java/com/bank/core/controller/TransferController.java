@@ -37,8 +37,9 @@ public class TransferController {
 
     @GetMapping("/history")
     @PreAuthorize("isAuthenticated()")
-    public UniversalResponse<List<TransactionDto>> getHistory(@RequestParam Long accountId) {
+    public UniversalResponse<List<TransactionDto>> getHistory(@RequestParam("accountId") Long accountId) {
         log.info("Request to get transfer history by accountId: {}", accountId);
-        return transferService.getHistory(accountId);
+        UUID userId = SecurityUtils.getCurrentUserId();
+        return transferService.getHistory(accountId, userId);
     }
 }

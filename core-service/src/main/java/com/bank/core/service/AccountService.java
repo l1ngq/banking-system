@@ -12,7 +12,6 @@ import com.bank.core.entity.UserEntity;
 import com.bank.core.mapper.AccountMapper;
 import com.bank.core.repository.BankAccountRepository;
 import com.bank.core.repository.UserRepository;
-import com.bank.core.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,15 +44,11 @@ public class AccountService {
     public UniversalResponse<AccountDto> createAccount(CreateAccountRequest request, UUID userId) {
         log.info("Request to create account for userId: {}, request: {}", userId, request);
 
-        userRepository.findByKeycloakId(userId.toString())
-                .orElseGet(() -> userRepository.save(UserEntity.builder()
-                        .id(userId)
-                        .keycloakId(userId.toString())
-                        .email(SecurityUtils.getCurrentUserEmail())
-                        .build()));
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found by id: " + userId));
 
         BankAccountEntity entity = BankAccountEntity.builder()
-                .userId(userId)
+                .userId(user.getId())
                 .currency(request.getCurrency())
                 .type(request.getType())
                 .balance(BigDecimal.ZERO)
