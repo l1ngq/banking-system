@@ -83,6 +83,26 @@ docker compose ps
 - `kafka`;
 - `casdoor`.
 
+## Запуск всего проекта через Docker Compose
+
+```powershell
+docker compose down -v
+docker compose up --build
+```
+
+После `docker compose down -v` удаляются volumes PostgreSQL. Если автоматического seed для Casdoor нет, Casdoor users, application и roles нужно настроить заново.
+
+Доступные сервисы:
+
+- `core-service`: http://localhost:8080/swagger-ui.html
+- `currencies-service`: http://localhost:8081/swagger-ui.html
+- Casdoor: http://localhost:8000
+- Kafka: `localhost:9092`
+- Redis: `localhost:6379`
+- Postgres core: `localhost:5433`
+- Postgres currencies: `localhost:5434`
+- Postgres casdoor: `localhost:5435`
+
 ## Локальный запуск сервисов через Maven
 
 `currencies-service`:
