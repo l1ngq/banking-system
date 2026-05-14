@@ -4,8 +4,8 @@ import com.bank.common.dto.UniversalResponse;
 import com.bank.core.dto.AccountDto;
 import com.bank.core.dto.AccountListDto;
 import com.bank.core.dto.CreateAccountRequest;
+import com.bank.core.security.CurrentUserProvider;
 import com.bank.core.service.AccountService;
-import com.bank.core.util.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,12 +27,13 @@ import java.util.UUID;
 public class AccountController {
 
     private final AccountService accountService;
+    private final CurrentUserProvider currentUserProvider;
 
     @GetMapping("/my")
     @PreAuthorize("isAuthenticated()")
     public UniversalResponse<AccountListDto> getMyAccounts() {
         log.info("Request to get my accounts");
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserProvider.getCurrentUser().localUserId();
         return accountService.getMyAccounts(userId);
     }
 
@@ -40,7 +41,7 @@ public class AccountController {
     @PreAuthorize("isAuthenticated()")
     public UniversalResponse<AccountDto> createAccount(@Valid @RequestBody CreateAccountRequest request) {
         log.info("Request to create account: {}", request);
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserProvider.getCurrentUser().localUserId();
         return accountService.createAccount(request, userId);
     }
 
@@ -48,7 +49,7 @@ public class AccountController {
     @PreAuthorize("isAuthenticated()")
     public UniversalResponse<Void> closeAccount(@PathVariable("id") Long id) {
         log.info("Request to close account by id: {}", id);
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserProvider.getCurrentUser().localUserId();
         return accountService.closeAccount(id, userId);
     }
 }

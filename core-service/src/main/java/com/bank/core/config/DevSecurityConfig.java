@@ -5,6 +5,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -15,7 +16,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -26,7 +26,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 
 @Configuration
@@ -34,10 +33,15 @@ import java.util.Map;
 @EnableWebSecurity
 @EnableMethodSecurity
 @EnableConfigurationProperties(CorsProperties.class)
+@RequiredArgsConstructor
 public class DevSecurityConfig {
 
     private static final String DEV_USER_ID = "00000000-0000-0000-0000-000000000001";
     private static final String DEV_USER_EMAIL = "dev-user@bank.local";
+    private static final String DEV_USER_NAME = "dev-user";
+    private static final String DEV_ORGANIZATION = "banking";
+
+    private final JwtAuthConverter jwtAuthConverter;
 
     @Bean
     public SecurityFilterChain devFilterChain(
@@ -78,13 +82,17 @@ public class DevSecurityConfig {
                 issuedAt.plusSeconds(3600),
                 Map.of("alg", "none"),
                 Map.of(
+                        "id", DEV_USER_ID,
                         "sub", DEV_USER_ID,
-                        "email", DEV_USER_EMAIL
+                        "email", DEV_USER_EMAIL,
+                        "name", DEV_USER_NAME,
+                        "owner", DEV_ORGANIZATION,
+                        "roles", java.util.List.of(
+                                Map.of("name", "USER"),
+                                Map.of("name", "ADMIN")
+                        )
                 )
         );
-        return new JwtAuthenticationToken(jwt, List.of(
-                new SimpleGrantedAuthority("ROLE_USER"),
-                new SimpleGrantedAuthority("ROLE_ADMIN")
-        ));
+        return (JwtAuthenticationToken) jwtAuthConverter.convert(jwt);
     }
 }

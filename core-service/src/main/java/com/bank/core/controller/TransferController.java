@@ -3,8 +3,8 @@ package com.bank.core.controller;
 import com.bank.common.dto.UniversalResponse;
 import com.bank.core.dto.TransactionDto;
 import com.bank.core.dto.TransferRequest;
+import com.bank.core.security.CurrentUserProvider;
 import com.bank.core.service.TransferService;
-import com.bank.core.util.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,12 +26,13 @@ import java.util.UUID;
 public class TransferController {
 
     private final TransferService transferService;
+    private final CurrentUserProvider currentUserProvider;
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     public UniversalResponse<TransactionDto> transfer(@Valid @RequestBody TransferRequest request) {
         log.info("Request to transfer: {}", request);
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserProvider.getCurrentUser().localUserId();
         return transferService.transfer(request, userId);
     }
 
@@ -39,7 +40,7 @@ public class TransferController {
     @PreAuthorize("isAuthenticated()")
     public UniversalResponse<List<TransactionDto>> getHistory(@RequestParam("accountId") Long accountId) {
         log.info("Request to get transfer history by accountId: {}", accountId);
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserProvider.getCurrentUser().localUserId();
         return transferService.getHistory(accountId, userId);
     }
 }

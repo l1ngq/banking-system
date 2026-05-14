@@ -1,7 +1,6 @@
 package com.bank.core.config;
 
 import com.bank.core.config.properties.CorsProperties;
-import com.bank.core.config.properties.OidcProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +19,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
-@EnableConfigurationProperties({OidcProperties.class, CorsProperties.class})
+@EnableConfigurationProperties(CorsProperties.class)
 public class SecurityConfig {
 
     private final JwtAuthConverter jwtAuthConverter;
