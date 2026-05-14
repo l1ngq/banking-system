@@ -40,6 +40,27 @@ services:
     networks:
       - banking-network
 
+  postgres-casdoor:
+    image: postgres:18
+    container_name: postgres-casdoor
+    restart: no
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: casdoor_db
+      POSTGRES_USER: casdoor
+      POSTGRES_PASSWORD: casdoor
+      PGDATA: /var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U casdoor -d casdoor_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-casdoor-data:/var/lib/postgresql/data
+    networks:
+      - banking-network
+
   redis:
     image: redis:8.6.0
     container_name: redis
@@ -81,9 +102,28 @@ services:
     networks:
       - banking-network
 
+  casdoor:
+    image: casbin/casdoor:latest
+    container_name: casdoor
+    restart: no
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres-casdoor:
+        condition: service_healthy
+    environment:
+      RUNNING_IN_DOCKER: "true"
+      driverName: postgres
+      dataSourceName: "user=casdoor password=casdoor host=postgres-casdoor port=5432 sslmode=disable dbname=casdoor_db"
+      dbName: casdoor_db
+      origin: "http://localhost:8000"
+    networks:
+      - banking-network
+
 volumes:
   postgres-core-data:
   postgres-currencies-data:
+  postgres-casdoor-data:
 
 networks:
   banking-network:
