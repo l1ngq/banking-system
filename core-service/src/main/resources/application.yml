@@ -54,7 +54,10 @@ app:
   security:
     oidc:
       issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8000}
+      jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8000/.well-known/jwks}
       client-id: ${OIDC_CLIENT_ID:banking-core}
+      authorization-url: ${OIDC_AUTHORIZATION_URL:http://localhost:8000/login/oauth/authorize}
+      token-url: ${OIDC_TOKEN_URL:http://localhost:8000/api/login/oauth/access_token}
 
 currencies:
   service:

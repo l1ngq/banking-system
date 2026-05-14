@@ -10,5 +10,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class OidcProperties {
 
     private String issuerUri;
+    private String jwkSetUri;
     private String clientId;
+    private String authorizationUrl;
+    private String tokenUrl;
 }
