@@ -18,23 +18,32 @@ import java.util.UUID;
 public class DevDataInitializer implements ApplicationRunner {
 
     private static final UUID DEV_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-    private static final String DEV_EXTERNAL_AUTH_ID = "dev-user";
+    private static final String DEV_EXTERNAL_AUTH_ID = "00000000-0000-0000-0000-000000000001";
     private static final String DEV_USER_EMAIL = "dev-user@bank.local";
 
     private final UserRepository userRepository;
 
     @Override
     public void run(ApplicationArguments args) {
-        if (userRepository.findById(DEV_USER_ID).isPresent()) {
+        if (userRepository.findByExternalAuthId(DEV_EXTERNAL_AUTH_ID).isPresent()) {
             log.info("Dev user already exists: id={}, email={}", DEV_USER_ID, DEV_USER_EMAIL);
             return;
         }
 
-        userRepository.save(UserEntity.builder()
-                .id(DEV_USER_ID)
-                .externalAuthId(DEV_EXTERNAL_AUTH_ID)
-                .email(DEV_USER_EMAIL)
-                .build());
-        log.info("Created dev user: id={}, email={}", DEV_USER_ID, DEV_USER_EMAIL);
+        if (userRepository.findByEmail(DEV_USER_EMAIL).isPresent()) {
+            log.info("Dev user email already exists: email={}", DEV_USER_EMAIL);
+            return;
+        }
+
+        UserEntity user = userRepository.findById(DEV_USER_ID)
+                .orElseGet(() -> UserEntity.builder()
+                        .id(DEV_USER_ID)
+                        .build());
+        user.setExternalAuthId(DEV_EXTERNAL_AUTH_ID);
+        user.setEmail(DEV_USER_EMAIL);
+
+        userRepository.save(user);
+        log.info("Created dev user: id={}, externalAuthId={}, email={}",
+                user.getId(), DEV_EXTERNAL_AUTH_ID, DEV_USER_EMAIL);
     }
 }
