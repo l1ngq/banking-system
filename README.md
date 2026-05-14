@@ -86,8 +86,15 @@ docker compose ps
 ## Запуск всего проекта через Docker Compose
 
 ```powershell
+docker compose down
+docker compose up -d --build
+docker compose ps
+```
+
+Для полного сброса данных можно отдельно выполнить:
+
+```powershell
 docker compose down -v
-docker compose up --build
 ```
 
 После `docker compose down -v` удаляются volumes PostgreSQL. Если автоматического seed для Casdoor нет, Casdoor users, application и roles нужно настроить заново.
