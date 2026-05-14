@@ -1,0 +1,12 @@
+.git
+.idea
+target
+**/target
+out
+**/out
+run-logs
+*.log
+.env
+.env.local
+*.iml
+.codex
