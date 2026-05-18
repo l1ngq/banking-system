@@ -9,4 +9,3 @@ run-logs
 .env
 .env.local
 *.iml
-.codex

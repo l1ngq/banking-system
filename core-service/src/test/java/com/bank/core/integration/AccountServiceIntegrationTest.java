@@ -28,7 +28,7 @@ class AccountServiceIntegrationTest extends BasePostgresIntegrationTest {
     @Test
     @DisplayName("createAccount создает счет для существующего пользователя")
     void createAccountCreatesAccountForExistingUser() {
-        UserEntity user = userRepository.saveAndFlush(user("account-user-1", "account1@example.com"));
+        UserEntity user = userRepository.saveAndFlush(user("account1@example.com"));
         CreateAccountRequest request = new CreateAccountRequest(Currency.USD, AccountType.CHECKING);
 
         AccountDto result = accountService.createAccount(request, user.getId()).getData();
@@ -41,7 +41,7 @@ class AccountServiceIntegrationTest extends BasePostgresIntegrationTest {
     @Test
     @DisplayName("getMyAccounts возвращает созданные счета")
     void getMyAccountsReturnsCreatedAccounts() {
-        UserEntity user = userRepository.saveAndFlush(user("account-user-2", "account2@example.com"));
+        UserEntity user = userRepository.saveAndFlush(user("account2@example.com"));
         accountService.createAccount(new CreateAccountRequest(Currency.USD, AccountType.CHECKING), user.getId());
         accountService.createAccount(new CreateAccountRequest(Currency.EUR, AccountType.SAVINGS), user.getId());
 
@@ -54,7 +54,7 @@ class AccountServiceIntegrationTest extends BasePostgresIntegrationTest {
     @Test
     @DisplayName("closeAccount закрывает свой счет с нулевым балансом")
     void closeAccountClosesOwnAccountWithZeroBalance() {
-        UserEntity user = userRepository.saveAndFlush(user("account-user-3", "account3@example.com"));
+        UserEntity user = userRepository.saveAndFlush(user("account3@example.com"));
         BankAccountEntity account = bankAccountRepository.saveAndFlush(account(user.getId(), BigDecimal.ZERO));
 
         accountService.closeAccount(account.getId(), user.getId());
@@ -68,18 +68,20 @@ class AccountServiceIntegrationTest extends BasePostgresIntegrationTest {
     @Test
     @DisplayName("closeAccount выбрасывает ConflictException для счета с ненулевым балансом")
     void closeAccountThrowsConflictForNonZeroBalance() {
-        UserEntity user = userRepository.saveAndFlush(user("account-user-4", "account4@example.com"));
+        UserEntity user = userRepository.saveAndFlush(user("account4@example.com"));
         BankAccountEntity account = bankAccountRepository.saveAndFlush(account(user.getId(), new BigDecimal("10.00")));
 
         assertThatThrownBy(() -> accountService.closeAccount(account.getId(), user.getId()))
                 .isInstanceOf(ConflictException.class);
     }
 
-    private UserEntity user(String externalAuthId, String email) {
+    private UserEntity user(String email) {
         return UserEntity.builder()
                 .id(UUID.randomUUID())
-                .externalAuthId(externalAuthId)
                 .email(email)
+                .passwordHash("{noop}password")
+                .role("USER")
+                .enabled(true)
                 .build();
     }
 

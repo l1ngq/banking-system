@@ -11,7 +11,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.ProducerFactory;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -46,9 +45,6 @@ abstract class BasePostgresIntegrationTest {
     protected InterestAccrualLogRepository interestAccrualLogRepository;
 
     @MockitoBean
-    protected JwtDecoder jwtDecoder;
-
-    @MockitoBean
     protected TransactionEventProducer transactionEventProducer;
 
     @MockitoBean
@@ -67,9 +63,9 @@ abstract class BasePostgresIntegrationTest {
         registry.add("DATABASE_USERNAME", postgres::getUsername);
         registry.add("DATABASE_PASSWORD", postgres::getPassword);
         registry.add("APP_DATABASE_SCHEMA", () -> "public");
-        registry.add("OIDC_ISSUER_URI", () -> "http://localhost:9999/realms/test");
-        registry.add("OIDC_CLIENT_ID", () -> "test-client");
         registry.add("CORS_ALLOWED_ORIGINS", () -> "http://localhost:3000");
+        registry.add("REDIS_HOST", () -> "localhost");
+        registry.add("REDIS_PORT", () -> "6379");
         registry.add("BOOTSTRAP_SERVERS", () -> "localhost:9092");
         registry.add("CURRENCIES_SERVICE_URL", () -> "http://localhost:8081");
         registry.add("spring.liquibase.enabled", () -> "true");

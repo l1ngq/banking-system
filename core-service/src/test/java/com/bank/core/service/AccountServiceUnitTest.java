@@ -155,8 +155,10 @@ class AccountServiceUnitTest {
     private UserEntity user(UUID userId) {
         return UserEntity.builder()
                 .id(userId)
-                .externalAuthId(userId.toString())
                 .email("user@example.com")
+                .passwordHash("{noop}password")
+                .role("USER")
+                .enabled(true)
                 .build();
     }
 

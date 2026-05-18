@@ -27,7 +27,7 @@ class TransferServiceIntegrationTest extends BasePostgresIntegrationTest {
     @Test
     @DisplayName("Успешный перевод одной валюты меняет балансы в БД")
     void transferSameCurrencyChangesBalancesInDatabase() {
-        UserEntity user = userRepository.saveAndFlush(user("transfer-user-1", "transfer1@example.com"));
+        UserEntity user = userRepository.saveAndFlush(user("transfer1@example.com"));
         BankAccountEntity fromAccount = bankAccountRepository.saveAndFlush(account(user.getId(), new BigDecimal("100.00")));
         BankAccountEntity toAccount = bankAccountRepository.saveAndFlush(account(UUID.randomUUID(), new BigDecimal("20.00")));
 
@@ -44,7 +44,7 @@ class TransferServiceIntegrationTest extends BasePostgresIntegrationTest {
     @Test
     @DisplayName("После перевода создается TransactionEntity")
     void transferCreatesTransactionEntity() {
-        UserEntity user = userRepository.saveAndFlush(user("transfer-user-2", "transfer2@example.com"));
+        UserEntity user = userRepository.saveAndFlush(user("transfer2@example.com"));
         BankAccountEntity fromAccount = bankAccountRepository.saveAndFlush(account(user.getId(), new BigDecimal("100.00")));
         BankAccountEntity toAccount = bankAccountRepository.saveAndFlush(account(UUID.randomUUID(), BigDecimal.ZERO));
 
@@ -60,7 +60,7 @@ class TransferServiceIntegrationTest extends BasePostgresIntegrationTest {
     @Test
     @DisplayName("getHistory возвращает историю владельцу счета")
     void getHistoryReturnsHistoryForAccountOwner() {
-        UserEntity user = userRepository.saveAndFlush(user("transfer-user-3", "transfer3@example.com"));
+        UserEntity user = userRepository.saveAndFlush(user("transfer3@example.com"));
         BankAccountEntity fromAccount = bankAccountRepository.saveAndFlush(account(user.getId(), new BigDecimal("100.00")));
         BankAccountEntity toAccount = bankAccountRepository.saveAndFlush(account(UUID.randomUUID(), BigDecimal.ZERO));
         transferService.transfer(new TransferRequest(fromAccount.getId(), toAccount.getId(), new BigDecimal("10.00"), Currency.USD), user.getId());
@@ -74,18 +74,20 @@ class TransferServiceIntegrationTest extends BasePostgresIntegrationTest {
     @Test
     @DisplayName("getHistory выбрасывает ConflictException для чужого счета")
     void getHistoryThrowsConflictForForeignAccount() {
-        UserEntity owner = userRepository.saveAndFlush(user("transfer-user-4", "transfer4@example.com"));
+        UserEntity owner = userRepository.saveAndFlush(user("transfer4@example.com"));
         BankAccountEntity account = bankAccountRepository.saveAndFlush(account(owner.getId(), BigDecimal.ZERO));
 
         assertThatThrownBy(() -> transferService.getHistory(account.getId(), UUID.randomUUID()))
                 .isInstanceOf(ConflictException.class);
     }
 
-    private UserEntity user(String externalAuthId, String email) {
+    private UserEntity user(String email) {
         return UserEntity.builder()
                 .id(UUID.randomUUID())
-                .externalAuthId(externalAuthId)
                 .email(email)
+                .passwordHash("{noop}password")
+                .role("USER")
+                .enabled(true)
                 .build();
     }
 
