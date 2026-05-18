@@ -32,11 +32,19 @@ public class UserEntity {
     @Builder.Default
     private UUID id = UUID.randomUUID();
 
-    @Column(name = "external_auth_id", nullable = false, unique = true)
-    private String externalAuthId;
-
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true, length = 320)
     private String email;
+
+    @Column(name = "password_hash", nullable = false, length = 100)
+    private String passwordHash;
+
+    @Column(name = "role", nullable = false, length = 50)
+    @Builder.Default
+    private String role = "USER";
+
+    @Column(name = "enabled", nullable = false)
+    @Builder.Default
+    private boolean enabled = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
