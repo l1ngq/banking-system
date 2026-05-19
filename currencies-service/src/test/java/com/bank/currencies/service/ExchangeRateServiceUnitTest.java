@@ -12,8 +12,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -37,12 +35,6 @@ class ExchangeRateServiceUnitTest {
 
     @Mock
     private FrankfurterClient frankfurterClient;
-
-    @Mock
-    private RedisTemplate<String, Object> redisTemplate;
-
-    @Mock
-    private ValueOperations<String, Object> valueOperations;
 
     @InjectMocks
     private ExchangeRateService exchangeRateService;
@@ -68,8 +60,6 @@ class ExchangeRateServiceUnitTest {
                 .rate(new BigDecimal("90.00"))
                 .updatedAt(Instant.now())
                 .build();
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("rate:USD:RUB")).thenReturn(null);
         when(repository.findByBaseCurrencyAndTargetCurrency("USD", "RUB"))
                 .thenReturn(Optional.of(entity));
 
@@ -83,8 +73,6 @@ class ExchangeRateServiceUnitTest {
     @Test
     @DisplayName("Если курса нет, выбрасывается NotFoundException")
     void getRateThrowsNotFoundWhenRateIsMissing() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("rate:USD:RUB")).thenReturn(null);
         when(repository.findByBaseCurrencyAndTargetCurrency("USD", "RUB"))
                 .thenReturn(Optional.empty());
 
@@ -96,8 +84,6 @@ class ExchangeRateServiceUnitTest {
     @Test
     @DisplayName("Конвертация округляет сумму до 2 знаков")
     void convertRoundsConvertedAmountToTwoDigits() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("rate:USD:RUB")).thenReturn(null);
         when(repository.findByBaseCurrencyAndTargetCurrency("USD", "RUB"))
                 .thenReturn(Optional.of(ExchangeRateEntity.builder()
                         .baseCurrency("USD")
@@ -131,7 +117,6 @@ class ExchangeRateServiceUnitTest {
                 .thenReturn(Map.of());
         when(repository.findByBaseCurrencyAndTargetCurrency("USD", "EUR"))
                 .thenReturn(Optional.of(existing));
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
         // when
         exchangeRateService.refreshRates();

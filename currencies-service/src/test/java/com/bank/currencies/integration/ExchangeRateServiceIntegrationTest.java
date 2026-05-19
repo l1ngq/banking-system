@@ -12,11 +12,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ExchangeRateServiceIntegrationTest extends BaseCurrenciesPostgresIntegrationTest {
@@ -25,15 +23,13 @@ class ExchangeRateServiceIntegrationTest extends BaseCurrenciesPostgresIntegrati
     private ExchangeRateService exchangeRateService;
 
     @Test
-    @DisplayName("getRate берёт курс из БД при промахе Redis")
-    void getRateReturnsRateFromDatabaseWhenRedisMisses() {
+    @DisplayName("getRate берёт курс из БД")
+    void getRateReturnsRateFromDatabase() {
         exchangeRateRepository.save(rate("USD", "RUB", "90.500000"));
-        when(valueOperations.get("rate:USD:RUB")).thenReturn(null);
 
         BigDecimal result = exchangeRateService.getRate("USD", "RUB");
 
         assertThat(result).isEqualByComparingTo("90.500000");
-        verify(valueOperations).set("rate:USD:RUB", new BigDecimal("90.500000"), 55L, TimeUnit.MINUTES);
     }
 
     @Test
@@ -47,8 +43,6 @@ class ExchangeRateServiceIntegrationTest extends BaseCurrenciesPostgresIntegrati
     @Test
     @DisplayName("getRate выбрасывает NotFoundException, если курса нет")
     void getRateThrowsNotFoundWhenRateDoesNotExist() {
-        when(valueOperations.get("rate:USD:RUB")).thenReturn(null);
-
         assertThatThrownBy(() -> exchangeRateService.getRate("USD", "RUB"))
                 .isInstanceOf(NotFoundException.class);
     }
@@ -57,7 +51,6 @@ class ExchangeRateServiceIntegrationTest extends BaseCurrenciesPostgresIntegrati
     @DisplayName("convert корректно считает сумму и округляет до двух знаков")
     void convertCalculatesConvertedAmountAndRoundsToTwoDigits() {
         exchangeRateRepository.save(rate("USD", "RUB", "1.005000"));
-        when(valueOperations.get("rate:USD:RUB")).thenReturn(null);
 
         ConversionResult result = exchangeRateService.convert("USD", "RUB", new BigDecimal("1.00"));
 

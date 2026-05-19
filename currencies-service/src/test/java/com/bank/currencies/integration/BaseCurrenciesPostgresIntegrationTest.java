@@ -3,11 +3,8 @@ package com.bank.currencies.integration;
 import com.bank.currencies.client.FrankfurterClient;
 import com.bank.currencies.repository.ExchangeRateRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -16,8 +13,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
@@ -35,12 +30,7 @@ abstract class BaseCurrenciesPostgresIntegrationTest {
     protected ExchangeRateRepository exchangeRateRepository;
 
     @MockitoBean
-    protected RedisTemplate<String, Object> redisTemplate;
-
-    @MockitoBean
     protected FrankfurterClient frankfurterClient;
-
-    protected ValueOperations<String, Object> valueOperations;
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
@@ -54,17 +44,11 @@ abstract class BaseCurrenciesPostgresIntegrationTest {
         registry.add("spring.liquibase.parameters.APP_DATABASE_SCHEMA", () -> "public");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
         registry.add("spring.jpa.properties.hibernate.default_schema", () -> "public");
-        registry.add("REDIS_HOST", () -> "localhost");
-        registry.add("REDIS_PORT", () -> "6379");
         registry.add("spring.task.scheduling.enabled", () -> "false");
-        registry.add("spring.autoconfigure.exclude",
-                () -> "org.springframework.boot.data.redis.autoconfigure.DataRedisRepositoriesAutoConfiguration");
     }
 
     @BeforeEach
     void cleanDatabase() {
-        valueOperations = Mockito.mock(ValueOperations.class);
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         exchangeRateRepository.deleteAll();
     }
 }
