@@ -5,7 +5,7 @@
 ## Modules
 
 - `core-service`: счета, переводы, история операций и начисление процентов.
-- `currencies-service`: курсы валют, конвертация и Redis cache для курсов.
+- `currencies-service`: курсы валют и конвертация через PostgreSQL.
 - `common`: общие DTO, enums, events и exceptions.
 
 ## Infrastructure
@@ -15,12 +15,45 @@ PostgreSQL:
 - `core_db` для `core-service`;
 - `currencies_db` для `currencies-service`.
 
-Redis используется в двух местах:
+Redis используется только в `core-service`:
 
-- currencies cache в `currencies-service`;
 - Spring Session для `core-service`, namespace `banking:core:sessions`.
 
-Kafka используется для событий банковских операций и начисления процентов.
+`currencies-service` хранит и читает курсы валют из PostgreSQL. Внешний Frankfurter API не используется: курсы задаются вручную через endpoint сервиса.
+
+Kafka используется просто, через Spring Boot auto-configuration, только для внутренних бизнес-событий `core-service`:
+
+- `TransactionEventProducer` отправляет события банковских операций в `transaction-events`;
+- `InterestEventProducer` отправляет события начисления процентов в `interest-events`;
+- `NotificationConsumer` читает события через `@KafkaListener`.
+
+Kafka broker запускается через `docker-compose`.
+
+## Currencies
+
+`currencies-service` работает как простой сервис курсов валют на PostgreSQL.
+
+Задать или обновить курс вручную:
+
+```http
+PUT http://localhost:8081/api/currencies/rates
+Content-Type: application/json
+
+{
+  "baseCurrency": "USD",
+  "targetCurrency": "RUB",
+  "rate": 90.00
+}
+```
+
+После этого можно читать курс и выполнять конвертацию:
+
+```http
+GET http://localhost:8081/api/currencies/rate?from=USD&to=RUB
+GET http://localhost:8081/api/currencies/convert?from=USD&to=RUB&amount=10
+```
+
+В учебном проекте endpoint `PUT /api/currencies/rates` открыт. В production такой endpoint должен быть admin-only.
 
 ## Auth
 
@@ -54,6 +87,95 @@ password=password123
 1. Выполнить `GET http://localhost:8080/api/auth/me`.
 2. Взять cookie `XSRF-TOKEN`.
 3. Отправить header `X-XSRF-TOKEN: <token>` вместе с cookie `JSESSIONID`, если endpoint требует сессию.
+
+### Postman session smoke flow
+
+Primary HTTP smoke testing is done through Postman. Swagger/OpenAPI is kept as API documentation only.
+
+Keep Postman cookies enabled. For every `POST` below send the current `XSRF-TOKEN`
+cookie value as `X-XSRF-TOKEN`.
+
+1. Get CSRF cookie:
+
+```http
+GET http://localhost:8080/api/auth/me
+```
+
+2. Register:
+
+```http
+POST http://localhost:8080/api/auth/registration
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+3. Login:
+
+```http
+POST http://localhost:8080/api/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+email=user@example.com
+password=password123
+```
+
+4. Create an account:
+
+```http
+POST http://localhost:8080/api/accounts
+Content-Type: application/json
+
+{
+  "currency": "USD",
+  "type": "CHECKING"
+}
+```
+
+5. Deposit:
+
+```http
+POST http://localhost:8080/api/accounts/{id}/deposit
+Content-Type: application/json
+
+{
+  "amount": 100.00
+}
+```
+
+6. Withdraw:
+
+```http
+POST http://localhost:8080/api/accounts/{id}/withdraw
+Content-Type: application/json
+
+{
+  "amount": 50.00
+}
+```
+
+7. Transfer:
+
+```http
+POST http://localhost:8080/api/transfers
+Content-Type: application/json
+
+{
+  "fromAccountId": 1,
+  "toAccountId": 2,
+  "amount": 10.00,
+  "currency": "USD"
+}
+```
+
+8. History:
+
+```http
+GET http://localhost:8080/api/transfers/history?accountId={id}
+```
 
 ## Docker
 
@@ -115,9 +237,8 @@ Required variables:
 - `APP_DATABASE_SCHEMA`
 - `REDIS_HOST`
 - `REDIS_PORT`
-- `CACHE_TYPE`
 - `BOOTSTRAP_SERVERS`
 - `KAFKA_LISTENER_AUTO_STARTUP`
 - `CURRENCIES_SERVICE_URL`
 - `CORS_ALLOWED_ORIGINS`
-- `SCHEDULING_ENABLED`
+- `SCHEDULING_ENABLED` для `core-service` interest accrual scheduler
