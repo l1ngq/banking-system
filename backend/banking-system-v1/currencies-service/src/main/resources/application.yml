@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    url: ${CURRENCIES_DATABASE_URL:jdbc:postgresql://localhost:5434/currencies_db}
+    username: ${DATABASE_USERNAME:bank}
+    password: ${DATABASE_PASSWORD:bank}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: true
+    properties:
+      hibernate:
+        default_schema: ${APP_DATABASE_SCHEMA:currencies}
+        format_sql: true
+  liquibase:
+    enabled: true
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+    parameters:
+      APP_DATABASE_SCHEMA: ${APP_DATABASE_SCHEMA:currencies}
+  web:
+    error:
+      include-stacktrace: never
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+server:
+  port: 8081
+
+logging:
+  level:
+    root: INFO
+    com.bank: DEBUG
