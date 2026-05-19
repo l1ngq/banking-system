@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class InterestEventProducer {
 
-    private final KafkaTemplate<String, InterestAccrualEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void send(InterestAccrualEvent event) {
         try {
