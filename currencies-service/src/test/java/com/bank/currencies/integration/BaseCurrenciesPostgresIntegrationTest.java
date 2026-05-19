@@ -1,6 +1,5 @@
 package com.bank.currencies.integration;
 
-import com.bank.currencies.client.FrankfurterClient;
 import com.bank.currencies.repository.ExchangeRateRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +8,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -29,9 +27,6 @@ abstract class BaseCurrenciesPostgresIntegrationTest {
     @Autowired
     protected ExchangeRateRepository exchangeRateRepository;
 
-    @MockitoBean
-    protected FrankfurterClient frankfurterClient;
-
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
         registry.add("DATABASE_URL", postgres::getJdbcUrl);
@@ -44,7 +39,6 @@ abstract class BaseCurrenciesPostgresIntegrationTest {
         registry.add("spring.liquibase.parameters.APP_DATABASE_SCHEMA", () -> "public");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
         registry.add("spring.jpa.properties.hibernate.default_schema", () -> "public");
-        registry.add("spring.task.scheduling.enabled", () -> "false");
     }
 
     @BeforeEach

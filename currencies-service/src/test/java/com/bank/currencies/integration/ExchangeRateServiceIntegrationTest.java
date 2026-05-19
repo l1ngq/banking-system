@@ -1,7 +1,9 @@
 package com.bank.currencies.integration;
 
+import com.bank.common.enums.Currency;
 import com.bank.common.exception.NotFoundException;
 import com.bank.currencies.controller.dto.ConversionResult;
+import com.bank.currencies.controller.dto.RateDto;
 import com.bank.currencies.entity.ExchangeRateEntity;
 import com.bank.currencies.service.ExchangeRateService;
 import org.junit.jupiter.api.DisplayName;
@@ -10,12 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 
 class ExchangeRateServiceIntegrationTest extends BaseCurrenciesPostgresIntegrationTest {
 
@@ -59,44 +58,31 @@ class ExchangeRateServiceIntegrationTest extends BaseCurrenciesPostgresIntegrati
     }
 
     @Test
-    @DisplayName("refreshRates сохраняет новые курсы из FrankfurterClient")
-    void refreshRatesSavesNewRatesFromFrankfurterClient() {
-        when(frankfurterClient.fetchRates("USD", List.of("EUR", "RUB")))
-                .thenReturn(Map.of("EUR", new BigDecimal("0.910000")));
-        when(frankfurterClient.fetchRates("EUR", List.of("USD", "RUB")))
-                .thenReturn(Map.of("USD", new BigDecimal("1.100000")));
-        when(frankfurterClient.fetchRates("RUB", List.of("USD", "EUR")))
-                .thenReturn(Map.of());
+    @DisplayName("upsertRate создаёт новый курс")
+    void upsertRateCreatesNewRate() {
+        RateDto result = exchangeRateService.upsertRate(Currency.USD, Currency.RUB, new BigDecimal("90.000000"));
 
-        exchangeRateService.refreshRates();
-
-        assertThat(exchangeRateRepository.findByBaseCurrencyAndTargetCurrency("USD", "EUR"))
+        assertThat(result.getBaseCurrency()).isEqualTo("USD");
+        assertThat(result.getTargetCurrency()).isEqualTo("RUB");
+        assertThat(result.getRate()).isEqualByComparingTo("90.000000");
+        assertThat(exchangeRateRepository.findByBaseCurrencyAndTargetCurrency("USD", "RUB"))
                 .get()
                 .extracting(ExchangeRateEntity::getRate)
-                .isEqualTo(new BigDecimal("0.910000"));
-        assertThat(exchangeRateRepository.findByBaseCurrencyAndTargetCurrency("EUR", "USD"))
-                .get()
-                .extracting(ExchangeRateEntity::getRate)
-                .isEqualTo(new BigDecimal("1.100000"));
+                .isEqualTo(new BigDecimal("90.000000"));
     }
 
     @Test
-    @DisplayName("refreshRates обновляет существующий курс")
-    void refreshRatesUpdatesExistingRate() {
-        ExchangeRateEntity existing = exchangeRateRepository.save(rate("USD", "EUR", "0.800000"));
-        when(frankfurterClient.fetchRates("USD", List.of("EUR", "RUB")))
-                .thenReturn(Map.of("EUR", new BigDecimal("0.920000")));
-        when(frankfurterClient.fetchRates("EUR", List.of("USD", "RUB")))
-                .thenReturn(Map.of());
-        when(frankfurterClient.fetchRates("RUB", List.of("USD", "EUR")))
-                .thenReturn(Map.of());
+    @DisplayName("upsertRate обновляет существующий курс")
+    void upsertRateUpdatesExistingRate() {
+        ExchangeRateEntity existing = exchangeRateRepository.save(rate("USD", "RUB", "85.000000"));
 
-        exchangeRateService.refreshRates();
+        RateDto result = exchangeRateService.upsertRate(Currency.USD, Currency.RUB, new BigDecimal("90.000000"));
 
+        assertThat(result.getRate()).isEqualByComparingTo("90.000000");
         assertThat(exchangeRateRepository.findById(existing.getId()))
                 .get()
                 .extracting(ExchangeRateEntity::getRate)
-                .isEqualTo(new BigDecimal("0.920000"));
+                .isEqualTo(new BigDecimal("90.000000"));
     }
 
     private static ExchangeRateEntity rate(String baseCurrency, String targetCurrency, String rate) {

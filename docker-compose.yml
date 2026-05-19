@@ -97,7 +97,6 @@ services:
       DATABASE_USERNAME: bank
       DATABASE_PASSWORD: bank
       APP_DATABASE_SCHEMA: currencies
-      SCHEDULING_ENABLED: false
     depends_on:
       postgres-currencies:
         condition: service_healthy
