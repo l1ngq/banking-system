@@ -57,7 +57,7 @@ springdoc:
   api-docs:
     path: /api-docs
   swagger-ui:
-    path: /swagger-ui.html
+    path: /swagger-ui.html # Но проверка через Postman
 
 server:
   port: 8080

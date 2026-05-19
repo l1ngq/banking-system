@@ -16,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -31,6 +32,10 @@ abstract class BasePostgresIntegrationTest {
             .withDatabaseName("core_test_db")
             .withUsername("bank")
             .withPassword("bank");
+
+    @Container
+    static final GenericContainer<?> redis = new GenericContainer<>("redis:8.6.0")
+            .withExposedPorts(6379);
 
     @Autowired
     protected UserRepository userRepository;
@@ -64,8 +69,10 @@ abstract class BasePostgresIntegrationTest {
         registry.add("DATABASE_PASSWORD", postgres::getPassword);
         registry.add("APP_DATABASE_SCHEMA", () -> "public");
         registry.add("CORS_ALLOWED_ORIGINS", () -> "http://localhost:3000");
-        registry.add("REDIS_HOST", () -> "localhost");
-        registry.add("REDIS_PORT", () -> "6379");
+        registry.add("REDIS_HOST", redis::getHost);
+        registry.add("REDIS_PORT", () -> redis.getMappedPort(6379));
+        registry.add("spring.data.redis.host", redis::getHost);
+        registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
         registry.add("BOOTSTRAP_SERVERS", () -> "localhost:9092");
         registry.add("CURRENCIES_SERVICE_URL", () -> "http://localhost:8081");
         registry.add("spring.liquibase.enabled", () -> "true");
