@@ -24,7 +24,7 @@ export const navItems: NavItem[] = [
 ];
 
 export const profile: UserProfile = {
-  fullName: 'Неизвестно',
+  fullName: 'Николашка',
   phone: '-',
   email: '-',
   role: 'user',
