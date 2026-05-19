@@ -24,9 +24,9 @@ export const navItems: NavItem[] = [
 ];
 
 export const profile: UserProfile = {
-  fullName: 'Игорь Боланел',
-  phone: '+7 900 000-00-00',
-  email: 'igor@example.com',
+  fullName: 'Неизвестно',
+  phone: '-',
+  email: '-',
   role: 'user',
   theme: 'light',
   cashbackLevel: 'Premium 5%',
