@@ -5,11 +5,12 @@ import com.bank.core.entity.UserEntity;
 import com.bank.core.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Locale;
 
 @Component
 @RequiredArgsConstructor
@@ -19,48 +20,28 @@ public class CurrentUserProvider {
 
     @Transactional
     public CurrentUserInfo getCurrentUser() {
-        Jwt jwt = currentJwt();
-        String externalAuthId = firstNonBlank(jwt.getClaimAsString("id"), jwt.getSubject());
-        if (externalAuthId == null) {
-            throw new NotFoundException("JWT does not contain id or sub claim");
-        }
-
-        String email = jwt.getClaimAsString("email");
+        Authentication authentication = currentAuthentication();
+        String email = authentication.getName();
         if (email == null || email.isBlank()) {
-            throw new NotFoundException("JWT does not contain email claim");
+            throw new NotFoundException("Authenticated session user does not contain email");
         }
 
-        UserEntity user = userRepository.findByExternalAuthId(externalAuthId)
-                .or(() -> userRepository.findByEmail(email))
-                .orElseGet(() -> userRepository.save(UserEntity.builder()
-                        .externalAuthId(externalAuthId)
-                        .email(email)
-                        .build()));
-
+        UserEntity user = userRepository.findByEmail(email.trim().toLowerCase(Locale.ROOT))
+                .orElseThrow(() -> new NotFoundException("User not found by email: " + email));
         return new CurrentUserInfo(
                 user.getId(),
-                externalAuthId,
-                email,
-                jwt.getClaimAsString("name"),
-                jwt.getClaimAsString("owner")
+                user.getEmail(),
+                user.getRole()
         );
     }
 
-    private Jwt currentJwt() {
+    private Authentication currentAuthentication() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (!(authentication instanceof JwtAuthenticationToken jwtAuth)) {
-            throw new NotFoundException("Authenticated JWT user was not found in SecurityContext");
+        if (authentication == null
+                || authentication instanceof AnonymousAuthenticationToken
+                || !authentication.isAuthenticated()) {
+            throw new NotFoundException("Authenticated session user was not found in SecurityContext");
         }
-        return jwtAuth.getToken();
-    }
-
-    private String firstNonBlank(String first, String second) {
-        if (first != null && !first.isBlank()) {
-            return first;
-        }
-        if (second != null && !second.isBlank()) {
-            return second;
-        }
-        return null;
+        return authentication;
     }
 }

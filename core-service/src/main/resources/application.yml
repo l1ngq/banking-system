@@ -20,12 +20,11 @@ spring:
     default-schema: ${APP_DATABASE_SCHEMA:banking}
     parameters:
       APP_DATABASE_SCHEMA: ${APP_DATABASE_SCHEMA:banking}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8000}
-          jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8000/.well-known/jwks}
     cors:
       allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   web:
@@ -42,47 +41,32 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
+      group-id: banking-core
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       auto-offset-reset: latest
       properties:
-        spring.deserializer.value.delegate.class: >
-          org.springframework.kafka.support.serializer.JsonDeserializer
-        spring.json.trusted.packages: "*"
-
-app:
-  security:
-    oidc:
-      issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8000}
-      jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8000/.well-known/jwks}
-      client-id: ${OIDC_CLIENT_ID:banking-core}
-      authorization-url: ${OIDC_AUTHORIZATION_URL:http://localhost:8000/login/oauth/authorize}
-      token-url: ${OIDC_TOKEN_URL:http://localhost:8000/api/login/oauth/access_token}
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.trusted.packages: "com.bank.common.event"
 
 currencies:
   service:
     url: ${CURRENCIES_SERVICE_URL:http://localhost:8081}
 
-resilience4j:
-  circuitbreaker:
-    instances:
-      currencies:
-        sliding-window-size: 10
-        minimum-number-of-calls: 5
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 30s
-
 springdoc:
   api-docs:
     path: /api-docs
   swagger-ui:
-    path: /swagger-ui.html
-    oauth:
-      client-id: ${OIDC_CLIENT_ID:banking-core}
-      use-pkce-with-authorization-code-grant: true
+    path: /swagger-ui.html # Но проверка через Postman
 
 server:
   port: 8080
+  servlet:
+    session:
+      cookie:
+        name: JSESSIONID
+        http-only: true
+        same-site: lax
 
 logging:
   level:

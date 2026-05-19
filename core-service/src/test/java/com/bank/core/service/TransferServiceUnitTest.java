@@ -26,16 +26,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
-import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Function;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -56,12 +52,6 @@ class TransferServiceUnitTest {
 
     @Mock
     private CurrenciesClient currenciesClient;
-
-    @Mock
-    private CircuitBreakerFactory<?, ?> circuitBreakerFactory;
-
-    @Mock
-    private CircuitBreaker circuitBreaker;
 
     @Mock
     private TransactionMapper transactionMapper;
@@ -210,19 +200,14 @@ class TransferServiceUnitTest {
 
     @Test
     @DisplayName("Если currencies-service недоступен при переводе между валютами, выбрасывается CurrencyServiceUnavailableException")
-    @SuppressWarnings({"unchecked", "rawtypes"})
     void transferThrowsWhenCurrenciesServiceUnavailable() {
         UUID userId = UUID.randomUUID();
         BankAccountEntity fromAccount = account(1L, userId, new BigDecimal("1000.00"), Currency.USD, AccountStatus.ACTIVE);
         BankAccountEntity toAccount = account(2L, UUID.randomUUID(), BigDecimal.ZERO, Currency.RUB, AccountStatus.ACTIVE);
         when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
         when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
-        when(circuitBreakerFactory.create("currencies")).thenReturn(circuitBreaker);
-        when(circuitBreaker.run(any(Supplier.class), any(Function.class)))
-                .thenAnswer(invocation -> {
-                    Function<Throwable, BigDecimal> fallback = invocation.getArgument(1);
-                    return fallback.apply(new RuntimeException("currencies-service down"));
-                });
+        when(currenciesClient.convert(eq("USD"), eq("RUB"), eq(new BigDecimal("100.00"))))
+                .thenThrow(new RuntimeException("currencies-service down"));
 
         // when / then
         assertThatThrownBy(() -> transferService.transfer(
@@ -232,19 +217,14 @@ class TransferServiceUnitTest {
 
     @Test
     @DisplayName("При ошибке перевода балансы не изменяются")
-    @SuppressWarnings({"unchecked", "rawtypes"})
     void transferDoesNotChangeBalancesWhenCurrencyConversionFails() {
         UUID userId = UUID.randomUUID();
         BankAccountEntity fromAccount = account(1L, userId, new BigDecimal("1000.00"), Currency.USD, AccountStatus.ACTIVE);
         BankAccountEntity toAccount = account(2L, UUID.randomUUID(), new BigDecimal("500.00"), Currency.RUB, AccountStatus.ACTIVE);
         when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
         when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
-        when(circuitBreakerFactory.create("currencies")).thenReturn(circuitBreaker);
-        when(circuitBreaker.run(any(Supplier.class), any(Function.class)))
-                .thenAnswer(invocation -> {
-                    Function<Throwable, BigDecimal> fallback = invocation.getArgument(1);
-                    return fallback.apply(new RuntimeException("currencies-service down"));
-                });
+        when(currenciesClient.convert(eq("USD"), eq("RUB"), eq(new BigDecimal("100.00"))))
+                .thenThrow(new RuntimeException("currencies-service down"));
 
         // when
         assertThatThrownBy(() -> transferService.transfer(
@@ -259,7 +239,6 @@ class TransferServiceUnitTest {
 
     @Test
     @DisplayName("При переводе между разными валютами используется сумма из currencies-service")
-    @SuppressWarnings({"unchecked", "rawtypes"})
     void transferDifferentCurrenciesUsesConvertedAmount() {
         UUID userId = UUID.randomUUID();
         BankAccountEntity fromAccount = account(1L, userId, new BigDecimal("1000.00"), Currency.USD, AccountStatus.ACTIVE);
@@ -268,12 +247,6 @@ class TransferServiceUnitTest {
         when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
         when(transactionRepository.save(any(TransactionEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-        when(circuitBreakerFactory.create("currencies")).thenReturn(circuitBreaker);
-        when(circuitBreaker.run(any(Supplier.class), any(Function.class)))
-                .thenAnswer(invocation -> {
-                    Supplier<BigDecimal> supplier = invocation.getArgument(0);
-                    return supplier.get();
-                });
         when(currenciesClient.convert(eq("USD"), eq("RUB"), eq(new BigDecimal("10.00"))))
                 .thenReturn(new com.bank.common.dto.UniversalResponse<>(
                         new ConversionResult("USD", "RUB", new BigDecimal("10.00"), new BigDecimal("900.00"), new BigDecimal("90.00"), null)));

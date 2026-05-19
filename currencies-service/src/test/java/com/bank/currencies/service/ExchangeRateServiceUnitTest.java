@@ -1,8 +1,10 @@
 package com.bank.currencies.service;
 
+import com.bank.common.enums.Currency;
+import com.bank.common.exception.ConflictException;
 import com.bank.common.exception.NotFoundException;
-import com.bank.currencies.client.FrankfurterClient;
 import com.bank.currencies.controller.dto.ConversionResult;
+import com.bank.currencies.controller.dto.RateDto;
 import com.bank.currencies.entity.ExchangeRateEntity;
 import com.bank.currencies.repository.ExchangeRateRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -12,17 +14,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -35,25 +32,14 @@ class ExchangeRateServiceUnitTest {
     @Mock
     private ExchangeRateRepository repository;
 
-    @Mock
-    private FrankfurterClient frankfurterClient;
-
-    @Mock
-    private RedisTemplate<String, Object> redisTemplate;
-
-    @Mock
-    private ValueOperations<String, Object> valueOperations;
-
     @InjectMocks
     private ExchangeRateService exchangeRateService;
 
     @Test
     @DisplayName("Одинаковые валюты возвращают курс один")
     void getRateReturnsOneWhenCurrenciesAreEqual() {
-        // when
         BigDecimal rate = exchangeRateService.getRate("USD", "USD");
 
-        // then
         assertThat(rate).isEqualByComparingTo(BigDecimal.ONE);
         verify(repository, never()).findByBaseCurrencyAndTargetCurrency(any(), any());
     }
@@ -61,98 +47,101 @@ class ExchangeRateServiceUnitTest {
     @Test
     @DisplayName("Курс берётся из базы, если он есть")
     void getRateReturnsRateFromDatabase() {
-        ExchangeRateEntity entity = ExchangeRateEntity.builder()
-                .id(1L)
-                .baseCurrency("USD")
-                .targetCurrency("RUB")
-                .rate(new BigDecimal("90.00"))
-                .updatedAt(Instant.now())
-                .build();
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("rate:USD:RUB")).thenReturn(null);
         when(repository.findByBaseCurrencyAndTargetCurrency("USD", "RUB"))
-                .thenReturn(Optional.of(entity));
+                .thenReturn(Optional.of(rate("USD", "RUB", "90.00")));
 
-        // when
         BigDecimal rate = exchangeRateService.getRate("USD", "RUB");
 
-        // then
         assertThat(rate).isEqualByComparingTo("90.00");
     }
 
     @Test
     @DisplayName("Если курса нет, выбрасывается NotFoundException")
     void getRateThrowsNotFoundWhenRateIsMissing() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("rate:USD:RUB")).thenReturn(null);
         when(repository.findByBaseCurrencyAndTargetCurrency("USD", "RUB"))
                 .thenReturn(Optional.empty());
 
-        // when / then
         assertThatThrownBy(() -> exchangeRateService.getRate("USD", "RUB"))
                 .isInstanceOf(NotFoundException.class);
     }
 
     @Test
-    @DisplayName("Конвертация округляет сумму до 2 знаков")
-    void convertRoundsConvertedAmountToTwoDigits() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("rate:USD:RUB")).thenReturn(null);
+    @DisplayName("Конвертация использует курс из базы")
+    void convertUsesDatabaseRate() {
         when(repository.findByBaseCurrencyAndTargetCurrency("USD", "RUB"))
-                .thenReturn(Optional.of(ExchangeRateEntity.builder()
-                        .baseCurrency("USD")
-                        .targetCurrency("RUB")
-                        .rate(new BigDecimal("1.005"))
-                        .updatedAt(Instant.now())
-                        .build()));
+                .thenReturn(Optional.of(rate("USD", "RUB", "90.00")));
 
-        // when
-        ConversionResult result = exchangeRateService.convert("USD", "RUB", new BigDecimal("1.00"));
+        ConversionResult result = exchangeRateService.convert("USD", "RUB", new BigDecimal("10.00"));
 
-        // then
-        assertThat(result.getConvertedAmount()).isEqualByComparingTo("1.01");
+        assertThat(result.getConvertedAmount()).isEqualByComparingTo("900.00");
+        assertThat(result.getRate()).isEqualByComparingTo("90.00");
     }
 
     @Test
-    @DisplayName("Обновление курсов изменяет существующую запись")
-    void refreshRatesUpdatesExistingRate() {
+    @DisplayName("upsertRate создаёт новый курс")
+    void upsertCreatesNewRate() {
+        when(repository.findByBaseCurrencyAndTargetCurrency("USD", "RUB"))
+                .thenReturn(Optional.empty());
+        when(repository.save(any(ExchangeRateEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        RateDto result = exchangeRateService.upsertRate(Currency.USD, Currency.RUB, new BigDecimal("90.00"));
+
+        ArgumentCaptor<ExchangeRateEntity> captor = ArgumentCaptor.forClass(ExchangeRateEntity.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getBaseCurrency()).isEqualTo("USD");
+        assertThat(captor.getValue().getTargetCurrency()).isEqualTo("RUB");
+        assertThat(captor.getValue().getRate()).isEqualByComparingTo("90.00");
+        assertThat(captor.getValue().getUpdatedAt()).isNotNull();
+        assertThat(result.getRate()).isEqualByComparingTo("90.00");
+    }
+
+    @Test
+    @DisplayName("upsertRate обновляет существующий курс")
+    void upsertUpdatesExistingRate() {
+        Instant oldUpdatedAt = Instant.parse("2026-05-01T00:00:00Z");
         ExchangeRateEntity existing = ExchangeRateEntity.builder()
                 .id(1L)
                 .baseCurrency("USD")
-                .targetCurrency("EUR")
-                .rate(new BigDecimal("0.80"))
-                .updatedAt(Instant.parse("2026-05-01T00:00:00Z"))
+                .targetCurrency("RUB")
+                .rate(new BigDecimal("85.00"))
+                .updatedAt(oldUpdatedAt)
                 .build();
-        when(frankfurterClient.fetchRates("USD", List.of("EUR", "RUB")))
-                .thenReturn(Map.of("EUR", new BigDecimal("0.90")));
-        when(frankfurterClient.fetchRates("EUR", List.of("USD", "RUB")))
-                .thenReturn(Map.of());
-        when(frankfurterClient.fetchRates("RUB", List.of("USD", "EUR")))
-                .thenReturn(Map.of());
-        when(repository.findByBaseCurrencyAndTargetCurrency("USD", "EUR"))
+        when(repository.findByBaseCurrencyAndTargetCurrency("USD", "RUB"))
                 .thenReturn(Optional.of(existing));
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(repository.save(any(ExchangeRateEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        // when
-        exchangeRateService.refreshRates();
+        RateDto result = exchangeRateService.upsertRate(Currency.USD, Currency.RUB, new BigDecimal("90.00"));
 
-        // then
-        ArgumentCaptor<ExchangeRateEntity> captor = ArgumentCaptor.forClass(ExchangeRateEntity.class);
-        verify(repository).save(captor.capture());
-        assertThat(captor.getValue()).isSameAs(existing);
-        assertThat(existing.getRate()).isEqualByComparingTo("0.90");
-        assertThat(existing.getId()).isEqualTo(1L);
+        verify(repository).save(existing);
+        assertThat(existing.getRate()).isEqualByComparingTo("90.00");
+        assertThat(existing.getUpdatedAt()).isAfter(oldUpdatedAt);
+        assertThat(result.getRate()).isEqualByComparingTo("90.00");
     }
 
     @Test
-    @DisplayName("Пустой ответ FrankfurterClient не ломает обновление")
-    void refreshRatesDoesNotFailWhenFrankfurterReturnsEmptyRates() {
-        when(frankfurterClient.fetchRates("USD", List.of("EUR", "RUB"))).thenReturn(Map.of());
-        when(frankfurterClient.fetchRates("EUR", List.of("USD", "RUB"))).thenReturn(Map.of());
-        when(frankfurterClient.fetchRates("RUB", List.of("USD", "EUR"))).thenReturn(Map.of());
-
-        // when / then
-        assertThatCode(() -> exchangeRateService.refreshRates()).doesNotThrowAnyException();
+    @DisplayName("upsertRate отклоняет невалидный курс")
+    void upsertRejectsInvalidRate() {
+        assertThatThrownBy(() -> exchangeRateService.upsertRate(Currency.USD, Currency.RUB, BigDecimal.ZERO))
+                .isInstanceOf(ConflictException.class);
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("upsertRate запрещает одинаковые валюты")
+    void upsertRejectsSameCurrencyPair() {
+        assertThatThrownBy(() -> exchangeRateService.upsertRate(Currency.USD, Currency.USD, BigDecimal.ONE))
+                .isInstanceOf(ConflictException.class);
+        verify(repository, never()).save(any());
+    }
+
+    private static ExchangeRateEntity rate(String baseCurrency, String targetCurrency, String rate) {
+        return ExchangeRateEntity.builder()
+                .baseCurrency(baseCurrency)
+                .targetCurrency(targetCurrency)
+                .rate(new BigDecimal(rate))
+                .updatedAt(Instant.now())
+                .build();
     }
 }

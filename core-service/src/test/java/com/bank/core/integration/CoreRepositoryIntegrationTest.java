@@ -28,26 +28,27 @@ class CoreRepositoryIntegrationTest extends BasePostgresIntegrationTest {
     }
 
     @Test
-    @DisplayName("UserRepository сохраняет и находит пользователя по id и externalAuthId")
-    void userRepositorySavesAndFindsByIdAndExternalAuthId() {
-        UserEntity user = user(UUID.randomUUID(), "external-1", "user1@example.com");
+    @DisplayName("UserRepository сохраняет и находит пользователя по id и email")
+    void userRepositorySavesAndFindsByIdAndEmail() {
+        UserEntity user = user(UUID.randomUUID(), "user1@example.com");
 
         userRepository.saveAndFlush(user);
 
         assertThat(userRepository.findById(user.getId()))
                 .get()
-                .extracting(UserEntity::getExternalAuthId)
-                .isEqualTo("external-1");
-        assertThat(userRepository.findByExternalAuthId("external-1"))
+                .extracting(UserEntity::getEmail)
+                .isEqualTo("user1@example.com");
+        assertThat(userRepository.findByEmail("user1@example.com"))
                 .get()
                 .extracting(UserEntity::getId)
                 .isEqualTo(user.getId());
+        assertThat(userRepository.existsByEmail("user1@example.com")).isTrue();
     }
 
     @Test
     @DisplayName("BankAccountRepository сохраняет счет и находит его по userId")
     void bankAccountRepositorySavesAndFindsByUserId() {
-        UserEntity user = userRepository.saveAndFlush(user(UUID.randomUUID(), "external-2", "user2@example.com"));
+        UserEntity user = userRepository.saveAndFlush(user(UUID.randomUUID(), "user2@example.com"));
         BankAccountEntity account = bankAccount(user.getId(), BigDecimal.ZERO);
 
         BankAccountEntity saved = bankAccountRepository.saveAndFlush(account);
@@ -88,11 +89,13 @@ class CoreRepositoryIntegrationTest extends BasePostgresIntegrationTest {
                 .isEqualTo(new BigDecimal("1.23"));
     }
 
-    private UserEntity user(UUID id, String externalAuthId, String email) {
+    private UserEntity user(UUID id, String email) {
         return UserEntity.builder()
                 .id(id)
-                .externalAuthId(externalAuthId)
                 .email(email)
+                .passwordHash("{noop}password")
+                .role("USER")
+                .enabled(true)
                 .build();
     }
 

@@ -20,5 +20,7 @@
              file="ddl/003--create-table-transaction.xml"/>
     <include relativeToChangelogFile="true"
              file="ddl/004--create-table-interest-accrual-log.xml"/>
+    <include relativeToChangelogFile="true"
+             file="ddl/005--switch-users-to-session-auth.xml"/>
 
 </databaseChangeLog>

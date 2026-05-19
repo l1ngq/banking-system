@@ -1,7 +1,6 @@
 package com.bank.core.client;
 
 import com.bank.common.dto.UniversalResponse;
-import com.bank.core.config.FeignConfig;
 import com.bank.core.dto.ConversionResult;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,8 +10,7 @@ import java.math.BigDecimal;
 
 @FeignClient(
         name = "currencies-service",
-        url = "${currencies.service.url}",
-        configuration = FeignConfig.class
+        url = "${currencies.service.url}"
 )
 public interface CurrenciesClient {
 

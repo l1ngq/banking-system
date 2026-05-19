@@ -21,8 +21,6 @@ import com.bank.core.repository.BankAccountRepository;
 import com.bank.core.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
-import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +42,6 @@ public class TransferService {
     private final TransactionRepository transactionRepository;
     private final TransactionMapper transactionMapper;
     private final CurrenciesClient currenciesClient;
-    private final CircuitBreakerFactory<?, ?> circuitBreakerFactory;
     private final TransactionEventProducer transactionEventProducer;
 
     public UniversalResponse<TransactionDto> transfer(TransferRequest request, UUID currentUserId) {
@@ -87,7 +84,7 @@ public class TransferService {
 
         BigDecimal convertedAmount = request.getAmount();
         if (!fromAccount.getCurrency().equals(toAccount.getCurrency())) {
-            convertedAmount = callCurrenciesWithCB(
+            convertedAmount = convertCurrency(
                     fromAccount.getCurrency().name(),
                     toAccount.getCurrency().name(),
                     request.getAmount());
@@ -136,19 +133,23 @@ public class TransferService {
         return new UniversalResponse<>(transactions);
     }
 
-    private BigDecimal callCurrenciesWithCB(String from, String to, BigDecimal amount) {
-        CircuitBreaker cb = circuitBreakerFactory.create("currencies");
-        return cb.run(
-                () -> {
-                    UniversalResponse<ConversionResult> resp = currenciesClient.convert(from, to, amount);
-                    return resp.getData().getConvertedAmount();
-                },
-                throwable -> {
-                    log.error("Currencies service недоступен: {}", throwable.getMessage());
-                    throw new CurrencyServiceUnavailableException(
-                            "Сервис конвертации недоступен, попробуйте позже"
-                    );
-                }
-        );
+    private BigDecimal convertCurrency(String from, String to, BigDecimal amount) {
+        try {
+            UniversalResponse<ConversionResult> response = currenciesClient.convert(from, to, amount);
+            if (response == null || response.getData() == null) {
+                throw new CurrencyServiceUnavailableException(
+                        "Сервис конвертации вернул пустой ответ"
+                );
+            }
+            return response.getData().getConvertedAmount();
+        } catch (CurrencyServiceUnavailableException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
+            log.error("Currencies service недоступен: {}", ex.getMessage());
+            throw new CurrencyServiceUnavailableException(
+                    "Сервис конвертации недоступен, попробуйте позже",
+                    ex
+            );
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.bank.core.controller;
 import com.bank.common.dto.UniversalResponse;
 import com.bank.core.dto.AccountDto;
 import com.bank.core.dto.AccountListDto;
+import com.bank.core.dto.AccountOperationRequest;
 import com.bank.core.dto.CreateAccountRequest;
 import com.bank.core.security.CurrentUserProvider;
 import com.bank.core.service.AccountService;
@@ -43,6 +44,26 @@ public class AccountController {
         log.info("Request to create account: {}", request);
         UUID userId = currentUserProvider.getCurrentUser().localUserId();
         return accountService.createAccount(request, userId);
+    }
+
+    @PostMapping("/{accountId}/deposit")
+    @PreAuthorize("isAuthenticated()")
+    public UniversalResponse<AccountDto> deposit(
+            @PathVariable("accountId") Long accountId,
+            @Valid @RequestBody AccountOperationRequest request) {
+        log.info("Request to deposit into account by id: {}", accountId);
+        UUID userId = currentUserProvider.getCurrentUser().localUserId();
+        return accountService.deposit(accountId, userId, request.getAmount());
+    }
+
+    @PostMapping("/{accountId}/withdraw")
+    @PreAuthorize("isAuthenticated()")
+    public UniversalResponse<AccountDto> withdraw(
+            @PathVariable("accountId") Long accountId,
+            @Valid @RequestBody AccountOperationRequest request) {
+        log.info("Request to withdraw from account by id: {}", accountId);
+        UUID userId = currentUserProvider.getCurrentUser().localUserId();
+        return accountService.withdraw(accountId, userId, request.getAmount());
     }
 
     @DeleteMapping("/{id}")
