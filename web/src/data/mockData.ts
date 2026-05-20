@@ -19,6 +19,14 @@ type PersonalSeed = {
   assistantMessages: AssistantMessage[];
   goals: SavingGoal[];
   cashbackCategories: CashbackCategory[];
+export const profile: UserProfile = {
+  fullName: 'Николашка',
+  phone: '-',
+  email: '-',
+  role: 'user',
+  theme: 'light',
+  cashbackLevel: 'Premium 5%',
+  city: 'Москва',
 };
 
 export const currencyRates: CurrencyRate[] = [

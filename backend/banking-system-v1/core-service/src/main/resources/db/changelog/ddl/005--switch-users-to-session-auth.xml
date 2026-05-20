@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="005--switch-users-to-session-auth" author="student">
+        <dropNotNullConstraint tableName="users"
+                               schemaName="${APP_DATABASE_SCHEMA}"
+                               columnName="external_auth_id"
+                               columnDataType="varchar(255)"/>
+
+        <addColumn tableName="users" schemaName="${APP_DATABASE_SCHEMA}">
+            <column name="password_hash"
+                    type="varchar(100)"
+                    defaultValue="$2a$10$np8aFZGTn9MVQRlH3n8j9OlLRMKe0PPsE0kXQfwpzqKldexHiJ2iy">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="varchar(50)" defaultValue="USER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <dropDefaultValue tableName="users"
+                          schemaName="${APP_DATABASE_SCHEMA}"
+                          columnName="password_hash"
+                          columnDataType="varchar(100)"/>
+    </changeSet>
+
+</databaseChangeLog>
