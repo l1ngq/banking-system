@@ -1,17 +1,12 @@
-name: Frontend final
+name: Frontend CI
 
 on:
   pull_request:
+    branches: ["main"]
     paths:
       - "web/**"
       - ".github/workflows/frontend-ci.yml"
-  push:
-    branches:
-      - main
-      - frontend-final
-    paths:
-      - "web/**"
-      - ".github/workflows/frontend-ci.yml"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,25 +18,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.4.0
         with:
-          node-version: "20"
+          node-version: "24.x"
           cache: "npm"
           cache-dependency-path: "web/package-lock.json"
 
-      - name: Show versions
-        run: |
-          node -v
-          npm -v
-
-      - name: Install stable npm
-        run: npm install -g npm@10
-
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci
 
-      - name: Build frontend
+      - name: build
         run: npm run build
