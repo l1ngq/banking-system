@@ -8,6 +8,7 @@ import Sidebar from './components/Sidebar';
 import ToastStack from './components/ToastStack';
 import { useBankingState } from './hooks/useBankingState';
 import AccountsPage from './pages/AccountsPage';
+import AuthPage from './pages/AuthPage';
 import AssistantPage from './pages/AssistantPage';
 import CardsPage from './pages/CardsPage';
 import CurrencyPage from './pages/CurrencyPage';
@@ -19,91 +20,63 @@ import type { Action, Page } from './types/banking';
 function App() {
   const [activePage, setActivePage] = useState<Page>('dashboard');
   const [activeAction, setActiveAction] = useState<Action | null>(null);
-
   const banking = useBankingState();
-  const { state } = banking;
+  const { auth, state } = banking;
 
   function renderPage() {
     switch (activePage) {
       case 'dashboard':
-        return (
-          <Dashboard
-            state={state}
-            onActionSelect={setActiveAction}
-            onNavigate={setActivePage}
-          />
-        );
+        return <Dashboard state={state} summary={banking.summary} onAction={setActiveAction} onNavigate={setActivePage} />;
       case 'accounts':
-        return (
-          <AccountsPage
-            state={state}
-            onActionSelect={setActiveAction}
-            onCloseAccount={banking.closeAccount}
-          />
-        );
+        return <AccountsPage accounts={state.accounts} onAction={setActiveAction} onCloseAccount={banking.closeAccount} />;
       case 'cards':
-        return <CardsPage state={state} />;
+        return <CardsPage cards={state.cards} />;
       case 'payments':
-        return (
-          <PaymentsPage
-            state={state}
-            onTransfer={banking.transfer}
-            onPay={banking.pay}
-          />
-        );
+        return <PaymentsPage accounts={state.accounts} transactions={state.transactions} onAction={setActiveAction} />;
       case 'currency':
-        return <CurrencyPage state={state} onExchange={banking.exchange} />;
+        return <CurrencyPage rates={state.rates} accounts={state.accounts} onAction={setActiveAction} />;
       case 'news':
-        return <NewsPage state={state} />;
+        return <NewsPage news={state.news} />;
       case 'assistant':
-        return (
-          <AssistantPage
-            state={state}
-            onSendMessage={banking.sendAssistantMessage}
-          />
-        );
+        return <AssistantPage messages={state.assistantMessages} onSend={banking.sendAssistantMessage} />;
       case 'profile':
-        return (
-          <ProfilePage
-            state={state}
-            onUpdateProfile={banking.updateProfile}
-            onThemeChange={banking.setTheme}
-          />
-        );
+        return <ProfilePage profile={state.profile} goals={state.goals} cashbackCategories={state.cashbackCategories} onUpdate={banking.updateProfile} />;
       default:
         return null;
     }
   }
 
+  if (auth.status !== 'authenticated') {
+    return (
+      <>
+        <AuthPage
+          loading={auth.status === 'checking'}
+          error={auth.error}
+          onLogin={banking.login}
+          onRegister={banking.register}
+          onDemoLogin={banking.loginDemo}
+        />
+        <ToastStack toasts={banking.toasts} onRemove={banking.removeToast} />
+      </>
+    );
+  }
+
   return (
     <div className="app">
       <Sidebar activePage={activePage} onNavigate={setActivePage} />
-
       <main className="main">
         <Header
           activePage={activePage}
           theme={state.profile.theme}
           userName={state.profile.fullName}
           onReset={banking.resetDemoData}
-          onThemeToggle={() =>
-            banking.setTheme(state.profile.theme === 'dark' ? 'light' : 'dark')
-          }
+          onLogout={banking.logout}
+          onThemeToggle={() => banking.setTheme(state.profile.theme === 'dark' ? 'light' : 'dark')}
         />
-
-        <div className="content">
-          {renderPage()}
-          <Footer onNavigate={setActivePage} />
-        </div>
+        <section className="content">{renderPage()}<Footer onNavigate={setActivePage} /></section>
       </main>
-
-      <ActionModal
-        action={activeAction}
-        accounts={state.accounts}
-        onClose={() => setActiveAction(null)}
-        onSubmit={banking.submitAction}
-      />
-
-      <ToastStack toasts={banking.toasts} onClose={banking.removeToast} />
+      <ActionModal action={activeAction} accounts={state.accounts} onClose={() => setActiveAction(null)} onSubmit={banking.submitAction} />
+      <ToastStack toasts={banking.toasts} onRemove={banking.removeToast} />
     </div>
   );
 }
