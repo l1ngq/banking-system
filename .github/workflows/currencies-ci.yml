@@ -4,7 +4,12 @@ on:
   pull_request:
     branches: ["main"]
     paths:
-      - "services/currencies-service/**"
+      - "backend/banking-system-v1/currencies-service/**"
+      - "backend/banking-system-v1/common/**"
+      - "backend/banking-system-v1/pom.xml"
+      - "backend/banking-system-v1/mvnw"
+      - "backend/banking-system-v1/.mvn/**"
+      - ".github/workflows/currencies-ci.yml"
   workflow_dispatch:
 
 jobs:
@@ -22,5 +27,5 @@ jobs:
           cache: maven
 
       - name: Build and Test
-        working-directory: ./services/currencies-service
-        run: mvn clean test
+        working-directory: ./backend/banking-system-v1
+        run: ./mvnw -pl currencies-service -am test
