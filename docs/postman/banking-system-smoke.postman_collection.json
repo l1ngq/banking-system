@@ -1,0 +1,661 @@
+{
+  "info": {
+    "name": "Banking System coursework smoke",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "coreUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "currenciesUrl",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "igorEmail",
+      "value": "igor@example.com"
+    },
+    {
+      "key": "maximEmail",
+      "value": "maxim@example.com"
+    },
+    {
+      "key": "nikolayEmail",
+      "value": "nikolay@example.com"
+    },
+    {
+      "key": "password",
+      "value": "password123"
+    },
+    {
+      "key": "xsrfToken",
+      "value": ""
+    },
+    {
+      "key": "rubAccountId",
+      "value": "1"
+    },
+    {
+      "key": "usdAccountId",
+      "value": "2"
+    },
+    {
+      "key": "eurAccountId",
+      "value": "3"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get CSRF",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.cookies.get('XSRF-TOKEN');",
+                  "if (token) pm.collectionVariables.set('xsrfToken', token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{coreUrl}}/api/auth/me"
+          }
+        },
+        {
+          "name": "Register Игорь",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{igorEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{coreUrl}}/api/auth/registration"
+          }
+        },
+        {
+          "name": "Register Максим",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{maximEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{coreUrl}}/api/auth/registration"
+          }
+        },
+        {
+          "name": "Register Николай",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{nikolayEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{coreUrl}}/api/auth/registration"
+          }
+        },
+        {
+          "name": "Login Игорь",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.cookies.get('XSRF-TOKEN');",
+                  "if (token) pm.collectionVariables.set('xsrfToken', token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "email",
+                  "value": "{{igorEmail}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{coreUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Login Максим",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.cookies.get('XSRF-TOKEN');",
+                  "if (token) pm.collectionVariables.set('xsrfToken', token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "email",
+                  "value": "{{maximEmail}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{coreUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Login Николай",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.cookies.get('XSRF-TOKEN');",
+                  "if (token) pm.collectionVariables.set('xsrfToken', token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "email",
+                  "value": "{{nikolayEmail}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{coreUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Current session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.cookies.get('XSRF-TOKEN');",
+                  "if (token) pm.collectionVariables.set('xsrfToken', token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{coreUrl}}/api/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Accounts for current user",
+      "item": [
+        {
+          "name": "Create RUB CHECKING account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.id) pm.collectionVariables.set('rubAccountId', String(json.data.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency\": \"RUB\",\n  \"type\": \"CHECKING\"\n}"
+            },
+            "url": "{{coreUrl}}/api/accounts"
+          }
+        },
+        {
+          "name": "Deposit RUB account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 150000\n}"
+            },
+            "url": "{{coreUrl}}/api/accounts/{{rubAccountId}}/deposit"
+          }
+        },
+        {
+          "name": "Create USD CHECKING account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.id) pm.collectionVariables.set('usdAccountId', String(json.data.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency\": \"USD\",\n  \"type\": \"CHECKING\"\n}"
+            },
+            "url": "{{coreUrl}}/api/accounts"
+          }
+        },
+        {
+          "name": "Deposit USD account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1000\n}"
+            },
+            "url": "{{coreUrl}}/api/accounts/{{usdAccountId}}/deposit"
+          }
+        },
+        {
+          "name": "Create EUR CHECKING account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.id) pm.collectionVariables.set('eurAccountId', String(json.data.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency\": \"EUR\",\n  \"type\": \"CHECKING\"\n}"
+            },
+            "url": "{{coreUrl}}/api/accounts"
+          }
+        },
+        {
+          "name": "Deposit EUR account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1000\n}"
+            },
+            "url": "{{coreUrl}}/api/accounts/{{eurAccountId}}/deposit"
+          }
+        },
+        {
+          "name": "List my accounts",
+          "request": {
+            "method": "GET",
+            "url": "{{coreUrl}}/api/accounts/my"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Currencies",
+      "item": [
+        {
+          "name": "Seed USD/RUB",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseCurrency\": \"USD\",\n  \"targetCurrency\": \"RUB\",\n  \"rate\": 90\n}"
+            },
+            "url": "{{currenciesUrl}}/api/currencies/rates"
+          }
+        },
+        {
+          "name": "Seed RUB/USD",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseCurrency\": \"RUB\",\n  \"targetCurrency\": \"USD\",\n  \"rate\": 0.011111\n}"
+            },
+            "url": "{{currenciesUrl}}/api/currencies/rates"
+          }
+        },
+        {
+          "name": "Seed EUR/RUB",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseCurrency\": \"EUR\",\n  \"targetCurrency\": \"RUB\",\n  \"rate\": 98\n}"
+            },
+            "url": "{{currenciesUrl}}/api/currencies/rates"
+          }
+        },
+        {
+          "name": "Seed RUB/EUR",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseCurrency\": \"RUB\",\n  \"targetCurrency\": \"EUR\",\n  \"rate\": 0.010204\n}"
+            },
+            "url": "{{currenciesUrl}}/api/currencies/rates"
+          }
+        },
+        {
+          "name": "Seed USD/EUR",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseCurrency\": \"USD\",\n  \"targetCurrency\": \"EUR\",\n  \"rate\": 0.918367\n}"
+            },
+            "url": "{{currenciesUrl}}/api/currencies/rates"
+          }
+        },
+        {
+          "name": "Seed EUR/USD",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseCurrency\": \"EUR\",\n  \"targetCurrency\": \"USD\",\n  \"rate\": 1.088889\n}"
+            },
+            "url": "{{currenciesUrl}}/api/currencies/rates"
+          }
+        },
+        {
+          "name": "Get USD/RUB rate",
+          "request": {
+            "method": "GET",
+            "url": "{{currenciesUrl}}/api/currencies/rate?from=USD&to=RUB"
+          }
+        },
+        {
+          "name": "Convert USD to RUB",
+          "request": {
+            "method": "GET",
+            "url": "{{currenciesUrl}}/api/currencies/convert?from=USD&to=RUB&amount=10"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Operations for current user",
+      "item": [
+        {
+          "name": "Transfer RUB to USD account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromAccountId\": \"{{rubAccountId}}\",\n  \"toAccountId\": \"{{usdAccountId}}\",\n  \"amount\": 1000,\n  \"currency\": \"RUB\"\n}"
+            },
+            "url": "{{coreUrl}}/api/transfers"
+          }
+        },
+        {
+          "name": "Payment from RUB account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{xsrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 500\n}"
+            },
+            "url": "{{coreUrl}}/api/accounts/{{rubAccountId}}/withdraw"
+          }
+        },
+        {
+          "name": "History for RUB account",
+          "request": {
+            "method": "GET",
+            "url": "{{coreUrl}}/api/transfers/history?accountId={{rubAccountId}}"
+          }
+        }
+      ]
+    }
+  ]
+}
