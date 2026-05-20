@@ -31,7 +31,10 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v7.1.0
         with:
-          context: ./services/currencies-service
+          context: ./backend/banking-system-v1
+          file: ./backend/banking-system-v1/Dockerfile
+          build-args: |
+            SERVICE=currencies-service
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
