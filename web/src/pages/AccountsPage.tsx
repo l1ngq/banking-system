@@ -1,59 +1,22 @@
-import { useMemo, useState } from 'react';
-import type { Account, Action, BankingState } from '../types/banking';
+import type { Account, Action } from '../types/banking';
 import { formatDate, formatMoney, maskAccountNumber } from '../utils/formatters';
 
-interface AccountsPageProps {
-  state: BankingState;
-  onActionSelect: (action: Action) => void;
-  onCloseAccount: (accountId: string) => void;
-}
+interface AccountsPageProps { accounts: Account[]; onAction: (action: Action) => void; onCloseAccount: (id: string) => void; }
 
-function AccountsPage({ state, onActionSelect, onCloseAccount }: AccountsPageProps) {
-  const [filter, setFilter] = useState<Account['type'] | 'all'>('all');
-
-  const accounts = useMemo(
-    () => state.accounts.filter((account) => filter === 'all' || account.type === filter),
-    [state.accounts, filter],
-  );
-
+function AccountsPage({ accounts, onAction, onCloseAccount }: AccountsPageProps) {
   return (
-    <section className="page-grid">
-      <div className="page-hero">
-        <div>
-          <p className="eyebrow">Счета</p>
-          <h2>Открытие, просмотр и закрытие счетов</h2>
-          <p>Раздел закрывает требования по обычным и накопительным банковским счетам.</p>
-        </div>
-        <button type="button" onClick={() => onActionSelect('openAccount')}>Открыть счёт</button>
-      </div>
-
-      <div className="filter-tabs">
-        <button className={filter === 'all' ? 'active' : ''} type="button" onClick={() => setFilter('all')}>Все</button>
-        <button className={filter === 'debit' ? 'active' : ''} type="button" onClick={() => setFilter('debit')}>Обычные</button>
-        <button className={filter === 'saving' ? 'active' : ''} type="button" onClick={() => setFilter('saving')}>Накопительные</button>
-      </div>
-
+    <div className="page-grid">
+      <section className="page-hero"><div><p className="eyebrow">мои счета</p><h2>Счета</h2><p>Управляйте счетами, балансом и доступными действиями.</p></div><button type="button" onClick={() => onAction('openAccount')}>Открыть счёт</button></section>
       <div className="accounts-list">
         {accounts.map((account) => (
-          <article className={`account-card ${account.status === 'closed' ? 'account-card--closed' : ''}`} key={account.id}>
-            <div>
-              <span className="badge">
-                {account.status === 'closed' ? 'Закрыт' : account.type === 'saving' ? 'Накопительный' : 'Активный'}
-              </span>
-              <h3>{account.name}</h3>
-              <p>{maskAccountNumber(account.number)} • открыт {formatDate(account.openedAt)}</p>
-            </div>
-            <div className="account-card__side">
-              <strong>{formatMoney(account.balance, account.currency)}</strong>
-              {account.interestRate && <span>{account.interestRate}% годовых</span>}
-              {account.status === 'active' && (
-                <button type="button" onClick={() => onCloseAccount(account.id)}>Закрыть счёт</button>
-              )}
-            </div>
+          <article key={account.id} className={`account-card ${account.status === 'closed' ? 'account-card--closed' : ''}`}>
+            <div><span className="badge">{account.type === 'saving' ? 'Накопительный' : 'Текущий'}</span><h3>{account.name}</h3><p>{maskAccountNumber(account.number)} · открыт {formatDate(account.openedAt)}</p><span>{account.currency} · {account.status === 'active' ? 'активен' : 'закрыт'}</span></div>
+            <div className="account-card__side"><strong>{formatMoney(account.balance, account.currency)}</strong>{account.status === 'active' && <button type="button" onClick={() => onCloseAccount(account.id)}>Закрыть</button>}</div>
           </article>
         ))}
       </div>
-    </section>
+      <section className="card"><div className="section-head"><h2>Действия</h2></div><div className="filter-tabs"><button onClick={() => onAction('topup')}>Пополнить</button><button onClick={() => onAction('pay')}>Списать</button><button onClick={() => onAction('transfer')}>Перевести</button><button onClick={() => onAction('exchange')}>Обменять</button></div></section>
+    </div>
   );
 }
 
