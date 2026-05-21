@@ -581,7 +581,6 @@ button:disabled { cursor: not-allowed; }
     min-height: auto;
   }
 }
-=======
 .account-card__main {
   min-width: 0;
 }
