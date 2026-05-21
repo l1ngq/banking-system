@@ -26,7 +26,7 @@ function AuthPage({ loading = false, error, onLogin, onRegister }: AuthPageProps
     () =>
       isRegister
         ? 'Укажите почту и пароль, чтобы открыть новый личный кабинет.'
-        : 'Введите данные, чтобы продолжить работу с личным кабинетом.',
+        : 'Введите данные своего аккаунта для входа в личный кабинет.',
     [isRegister],
   );
 
@@ -111,7 +111,6 @@ function AuthPage({ loading = false, error, onLogin, onRegister }: AuthPageProps
               </article>
             </div>
           </div>
-
         </section>
 
         <section className="auth-panel" aria-label="Авторизация">
