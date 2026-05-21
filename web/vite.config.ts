@@ -5,7 +5,14 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
+    // Relative asset paths make the built app work both on a domain root and under a subpath.
+    base: env.VITE_APP_BASE_PATH || './',
     plugins: [react()],
+    build: {
+      outDir: 'dist',
+      assetsDir: 'assets',
+      sourcemap: false,
+    },
     server: {
       host: '0.0.0.0',
       port: 3000,

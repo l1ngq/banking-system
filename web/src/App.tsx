@@ -9,10 +9,7 @@ import ToastStack from './components/ToastStack';
 import { useBankingState } from './hooks/useBankingState';
 import AccountsPage from './pages/AccountsPage';
 import AuthPage from './pages/AuthPage';
-import AssistantPage from './pages/AssistantPage';
-import CardsPage from './pages/CardsPage';
 import CurrencyPage from './pages/CurrencyPage';
-import NewsPage from './pages/NewsPage';
 import PaymentsPage from './pages/PaymentsPage';
 import ProfilePage from './pages/ProfilePage';
 import type { Action, Page } from './types/banking';
@@ -29,16 +26,10 @@ function App() {
         return <Dashboard state={state} summary={banking.summary} onAction={setActiveAction} onNavigate={setActivePage} />;
       case 'accounts':
         return <AccountsPage accounts={state.accounts} onAction={setActiveAction} onCloseAccount={banking.closeAccount} />;
-      case 'cards':
-        return <CardsPage cards={state.cards} />;
       case 'payments':
         return <PaymentsPage accounts={state.accounts} transactions={state.transactions} onAction={setActiveAction} />;
       case 'currency':
         return <CurrencyPage rates={state.rates} accounts={state.accounts} onAction={setActiveAction} />;
-      case 'news':
-        return <NewsPage news={state.news} />;
-      case 'assistant':
-        return <AssistantPage messages={state.assistantMessages} onSend={banking.sendAssistantMessage} />;
       case 'profile':
         return <ProfilePage profile={state.profile} goals={state.goals} cashbackCategories={state.cashbackCategories} onUpdate={banking.updateProfile} />;
       default:
@@ -71,6 +62,7 @@ function App() {
           userName={state.profile.fullName}
           onReset={banking.resetDemoData}
           onLogout={banking.logout}
+          onProfileOpen={() => setActivePage('profile')}
           onThemeToggle={() => banking.setTheme(state.profile.theme === 'dark' ? 'light' : 'dark')}
         />
         <section className="content">{renderPage()}<Footer onNavigate={setActivePage} /></section>

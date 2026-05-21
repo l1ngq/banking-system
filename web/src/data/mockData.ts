@@ -3,12 +3,8 @@ import type { Account, AssistantMessage, BankCard, BankingState, CashbackCategor
 export const navItems: NavItem[] = [
   { key: 'dashboard', label: 'Главная', icon: '⌂' },
   { key: 'accounts', label: 'Счета', icon: '₽' },
-  { key: 'cards', label: 'Карты', icon: '▣' },
   { key: 'payments', label: 'Платежи', icon: '↗' },
   { key: 'currency', label: 'Валюта', icon: '$' },
-  { key: 'news', label: 'Новости', icon: '◆' },
-  { key: 'assistant', label: 'Ассистент', icon: '✦' },
-  { key: 'profile', label: 'Профиль', icon: '●' },
 ];
 
 type PersonalSeed = {
@@ -19,14 +15,6 @@ type PersonalSeed = {
   assistantMessages: AssistantMessage[];
   goals: SavingGoal[];
   cashbackCategories: CashbackCategory[];
-export const profile: UserProfile = {
-  fullName: 'Николашка',
-  phone: '-',
-  email: '-',
-  role: 'user',
-  theme: 'light',
-  cashbackLevel: 'Premium 5%',
-  city: 'Москва',
 };
 
 export const currencyRates: CurrencyRate[] = [
@@ -150,8 +138,45 @@ const personalSeeds: Record<string, PersonalSeed> = {
   },
 };
 
+function nameFromEmail(email?: string | null) {
+  const prefix = email?.split('@')[0]?.trim();
+  if (!prefix) return 'Новый пользователь';
+
+  return prefix
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ') || 'Новый пользователь';
+}
+
+function createEmptyBankingState(email?: string | null): BankingState {
+  return {
+    profile: {
+      fullName: nameFromEmail(email),
+      phone: '',
+      email: email ?? '',
+      role: 'user',
+      theme: 'light',
+      cashbackLevel: 'Базовый',
+      city: '',
+    },
+    accounts: [],
+    cards: [],
+    transactions: [],
+    rates: clone(currencyRates),
+    news: [],
+    assistantMessages: [],
+    goals: [],
+    cashbackCategories: [],
+  };
+}
+
 export function createBankingStateForEmail(email?: string | null): BankingState {
-  const seed = personalSeeds[keyFromEmail(email)] ?? personalSeeds['igor@example.com'];
+  const seed = personalSeeds[keyFromEmail(email)];
+
+  if (!seed) {
+    return createEmptyBankingState(email);
+  }
 
   return {
     profile: clone(seed.profile),
