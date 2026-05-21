@@ -9,16 +9,15 @@ const titles: Record<Page, string> = {
   profile: 'Профиль',
 };
 
-interface HeaderProps { activePage: Page; theme: Theme; userName: string; onThemeToggle: () => void; onReset: () => void; onLogout: () => void; onProfileOpen: () => void; }
+interface HeaderProps { activePage: Page; theme: Theme; userName: string; onThemeToggle: () => void; onLogout: () => void; onProfileOpen: () => void; }
 
-function Header({ activePage, theme, userName, onThemeToggle, onReset, onLogout, onProfileOpen }: HeaderProps) {
+function Header({ activePage, theme, userName, onThemeToggle, onLogout, onProfileOpen }: HeaderProps) {
   return (
     <header className="header">
       <div><p className="header__eyebrow">МИК Банк</p><h1>{titles[activePage]}</h1></div>
       <div className="header__right">
         <div className="header__search">⌘K Поиск по операциям</div>
         <button className="icon-button" type="button" onClick={onThemeToggle} title="Сменить тему">{theme === 'dark' ? '☀' : '☾'}</button>
-        <button className="icon-button icon-button--wide" type="button" onClick={onReset}>Сброс</button>
         <button className="icon-button icon-button--wide" type="button" onClick={onLogout}>Выйти</button>
         <button className="header__user" type="button" onClick={onProfileOpen} title="Открыть профиль"><span className="header__avatar">{getInitials(userName)}</span><span>{userName.split(' ')[0]}</span></button>
       </div>
