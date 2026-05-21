@@ -35,6 +35,7 @@ function ActionModal({ action, accounts, onClose, onSubmit }: ActionModalProps) 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPayload({
       accountId: firstAccount,
+      transferMode: 'own',
       toAccountNumber: secondAccount,
       currency: 'RUB',
       type: 'debit',
@@ -47,14 +48,21 @@ function ActionModal({ action, accounts, onClose, onSubmit }: ActionModalProps) 
   const activeAction = action;
   const selectedAccount = activeAccounts.find((account) => account.id === payload.accountId);
   const destinationAccounts = activeAccounts.filter((account) => account.id !== payload.accountId);
+  const isExternalTransfer = activeAction === 'transfer' && payload.transferMode === 'external';
 
   function update(key: string, value: string) {
     setPayload((current) => {
       const next = { ...current, [key]: value };
 
-      if (key === 'accountId' && activeAction === 'transfer') {
+      if (key === 'accountId' && activeAction === 'transfer' && next.transferMode !== 'external') {
         const nextDestination = activeAccounts.find((account) => account.id !== value)?.id ?? '';
         next.toAccountNumber = nextDestination;
+      }
+
+      if (key === 'transferMode') {
+        next.toAccountNumber = value === 'external'
+          ? ''
+          : activeAccounts.find((account) => account.id !== next.accountId)?.id ?? '';
       }
 
       if (key === 'accountId' && activeAction === 'exchange') {
@@ -106,15 +114,26 @@ function ActionModal({ action, accounts, onClose, onSubmit }: ActionModalProps) 
           <>{accountSelect}<label>Сумма<input type="number" min="1" step="0.01" value={payload.amount ?? ''} onChange={(event) => update('amount', event.target.value)} placeholder="1000" disabled={submitting} /></label></>
         )}
         {activeAction === 'transfer' && (
-          destinationAccounts.length > 0 ? (
-            <label>Счёт получателя
-              <select value={payload.toAccountNumber ?? ''} onChange={(event) => update('toAccountNumber', event.target.value)} disabled={submitting}>
-                {destinationAccounts.map((account) => <option key={account.id} value={account.id}>{account.name} · {account.number.slice(-4)} · {account.currency}</option>)}
-              </select>
-            </label>
-          ) : (
-            <label>Счёт получателя<input value={payload.toAccountNumber ?? ''} onChange={(event) => update('toAccountNumber', event.target.value)} placeholder="ID или номер счёта" disabled={submitting} /></label>
-          )
+          <>
+            <div className="form__grid">
+              <button type="button" className={payload.transferMode === 'own' ? 'button-primary' : 'text-button'} onClick={() => update('transferMode', 'own')} disabled={submitting}>Между своими счетами</button>
+              <button type="button" className={payload.transferMode === 'external' ? 'button-primary' : 'text-button'} onClick={() => update('transferMode', 'external')} disabled={submitting}>По номеру счёта</button>
+            </div>
+            {isExternalTransfer ? (
+              <>
+                <label>Номер счёта получателя<input value={payload.toAccountNumber ?? ''} onChange={(event) => update('toAccountNumber', event.target.value)} placeholder="Например, 40817810000000000000" disabled={submitting} /></label>
+                <p className="form__hint">Это черновик перевода: заявка появится в истории, а фактическое списание будет доступно после реализации на стороне банка.</p>
+              </>
+            ) : destinationAccounts.length > 0 ? (
+              <label>Счёт получателя
+                <select value={payload.toAccountNumber ?? ''} onChange={(event) => update('toAccountNumber', event.target.value)} disabled={submitting}>
+                  {destinationAccounts.map((account) => <option key={account.id} value={account.id}>{account.name} · {account.number.slice(-4)} · {account.currency}</option>)}
+                </select>
+              </label>
+            ) : (
+              <p className="form__hint">Откройте второй счёт, чтобы выполнить перевод между своими счетами.</p>
+            )}
+          </>
         )}
         {activeAction === 'pay' && <label>Назначение<input value={payload.title ?? ''} onChange={(event) => update('title', event.target.value)} placeholder="Оплата услуг" disabled={submitting} /></label>}
         {activeAction === 'exchange' && <label>Получить валюту<select value={(payload.toCurrency as CurrencyCode) ?? 'USD'} onChange={(event) => update('toCurrency', event.target.value)} disabled={submitting}><option value="USD" disabled={selectedAccount?.currency === 'USD'}>USD</option><option value="EUR" disabled={selectedAccount?.currency === 'EUR'}>EUR</option><option value="RUB" disabled={selectedAccount?.currency === 'RUB'}>RUB</option></select></label>}

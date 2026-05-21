@@ -133,6 +133,10 @@ function isNumericAccountId(value: string) {
   return /^\d+$/.test(value.trim());
 }
 
+function isValidExternalAccountNumber(value: string) {
+  return /^\d{10,30}$/.test(value.replace(/\D/g, ''));
+}
+
 function demoTargetBalance(currency: CurrencyCode) {
   if (currency === 'RUB') return DEMO_RUB_BALANCE;
   if (currency === 'USD') return DEMO_USD_BALANCE;
@@ -509,7 +513,7 @@ export function useBankingState() {
     }
   }
 
-  async function transfer(payload: { fromAccountId: string; toAccountNumber: string; amount: number }) {
+  async function transfer(payload: { fromAccountId: string; toAccountNumber: string; amount: number; transferMode?: string }) {
     if (!payload.amount || payload.amount <= 0 || payload.toAccountNumber.trim().length < 1) {
       notify('error', 'Проверьте данные перевода');
       return;
@@ -521,6 +525,33 @@ export function useBankingState() {
       let account = accounts.find((item) => item.id === payload.fromAccountId);
       if (!account) {
         notify('error', 'Счёт отправителя не найден');
+        return;
+      }
+
+      if (payload.transferMode === 'external') {
+        const recipientNumber = payload.toAccountNumber.replace(/\D/g, '');
+        if (!isValidExternalAccountNumber(recipientNumber)) {
+          notify('error', 'Введите корректный номер счёта получателя');
+          return;
+        }
+
+        const draftTransaction: Transaction = {
+          id: `external-draft-${crypto.randomUUID()}`,
+          title: `Черновик перевода на счёт •${recipientNumber.slice(-4)}`,
+          category: 'Перевод по номеру счёта',
+          amount: -payload.amount,
+          currency: account.currency,
+          createdAt: new Date().toISOString(),
+          status: 'pending',
+          accountId: account.id,
+          type: 'transfer',
+        };
+
+        setState((current) => ({
+          ...current,
+          transactions: uniqueTransactions([draftTransaction, ...current.transactions]),
+        }));
+        notify('info', 'Черновик перевода создан', 'Фактическая отправка будет доступна после реализации этой функции в системе банка');
         return;
       }
 
@@ -662,6 +693,7 @@ export function useBankingState() {
         fromAccountId: String(payload.accountId),
         toAccountNumber: String(payload.toAccountNumber),
         amount: Number(payload.amount),
+        transferMode: String(payload.transferMode || 'own'),
       });
       return;
     }
