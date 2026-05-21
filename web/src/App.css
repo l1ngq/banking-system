@@ -339,11 +339,6 @@ button:disabled { cursor: not-allowed; }
 
 .empty-text { margin: 12px 0 0; color: var(--color-muted); line-height: 1.6; }
 
-
-/* =========================
-   Final clean auth page
-   ========================= */
-
 .auth-shell {
   min-height: 100vh;
   padding: 28px;
@@ -584,5 +579,60 @@ button:disabled { cursor: not-allowed; }
 
   .auth-feature-card {
     min-height: auto;
+  }
+}
+=======
+.account-card__main {
+  min-width: 0;
+}
+
+.account-card__number-row {
+  display: grid;
+  gap: 10px;
+  margin: 6px 0 8px;
+}
+
+.account-number {
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.account-card__number-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.text-button--small {
+  min-height: 34px;
+  padding: 7px 11px;
+  font-size: 13px;
+}
+
+.transfer-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.transfer-mode button {
+  min-height: 44px;
+  justify-content: center;
+}
+
+@media (max-width: 680px) {
+  .account-card__number-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .text-button--small {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .transfer-mode {
+    grid-template-columns: 1fr;
   }
 }
