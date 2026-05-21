@@ -1,4 +1,3 @@
-import { currencyRates } from '../data/mockData';
 import type { CurrencyCode, CurrencyRate } from '../types/banking';
 import { API_URLS } from './config';
 import { request } from './http';
@@ -18,15 +17,6 @@ type BackendConversion = {
   rate: number | string;
 };
 
-const DEFAULT_RATES: Array<{ baseCurrency: 'USD' | 'EUR' | 'RUB'; targetCurrency: 'USD' | 'EUR' | 'RUB'; rate: number }> = [
-  { baseCurrency: 'USD', targetCurrency: 'RUB', rate: 90 },
-  { baseCurrency: 'RUB', targetCurrency: 'USD', rate: 0.011111 },
-  { baseCurrency: 'EUR', targetCurrency: 'RUB', rate: 98 },
-  { baseCurrency: 'RUB', targetCurrency: 'EUR', rate: 0.010204 },
-  { baseCurrency: 'USD', targetCurrency: 'EUR', rate: 0.918367 },
-  { baseCurrency: 'EUR', targetCurrency: 'USD', rate: 1.088889 },
-];
-
 function ensureBackendCurrency(currency: CurrencyCode) {
   if (!['USD', 'EUR', 'RUB'].includes(currency)) {
     throw new Error('Доступны только валюты USD, EUR и RUB');
@@ -34,29 +24,21 @@ function ensureBackendCurrency(currency: CurrencyCode) {
   return currency as 'USD' | 'EUR' | 'RUB';
 }
 
-function mergeRate(code: 'USD' | 'EUR', rate: number): CurrencyRate {
-  const fallback = currencyRates.find((item) => item.code === code);
+function rateName(code: 'USD' | 'EUR') {
+  return code === 'USD' ? 'Доллар США' : 'Евро';
+}
+
+function mapRate(code: 'USD' | 'EUR', rate: number): CurrencyRate {
   return {
     code,
-    name: fallback?.name ?? code,
+    name: rateName(code),
     buy: Number((rate * 0.985).toFixed(4)),
     sell: Number(rate.toFixed(4)),
-    change: fallback?.change ?? 0,
+    change: 0,
   };
 }
 
 export const currencyApi = {
-  async seedDefaultRates() {
-    await Promise.all(
-      DEFAULT_RATES.map((rate) =>
-        request<unknown>(`${API_URLS.currencies}/api/currencies/rates`, {
-          method: 'PUT',
-          body: JSON.stringify(rate),
-        }),
-      ),
-    );
-  },
-
   async getRate(from: CurrencyCode, to: CurrencyCode) {
     const rate = await request<BackendRate>(
       `${API_URLS.currencies}/api/currencies/rate?from=${encodeURIComponent(
@@ -72,7 +54,7 @@ export const currencyApi = {
       this.getRate('EUR', 'RUB'),
     ]);
 
-    return [mergeRate('USD', usdRub), mergeRate('EUR', eurRub)];
+    return [mapRate('USD', usdRub), mapRate('EUR', eurRub)];
   },
 
   async convert(payload: { from: CurrencyCode; to: CurrencyCode; amount: number }) {

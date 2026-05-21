@@ -1,5 +1,5 @@
 import type { Account, CurrencyCode, Transaction, UserProfile } from '../types/banking';
-import { API_URLS, DEMO_AUTH, type DemoUser } from './config';
+import { API_URLS } from './config';
 import { refreshCsrf, request } from './http';
 
 type BackendCurrency = 'USD' | 'EUR' | 'RUB';
@@ -211,25 +211,10 @@ export const coreApi = {
     return me;
   },
 
-  async signInDemoSession(user: DemoUser = DEMO_AUTH) {
-    if (!DEMO_AUTH.enabled) {
-      throw new Error('Демо-вход выключен в .env: VITE_AUTO_LOGIN=false');
-    }
-
-    try {
-      await this.register(user.email, user.password);
-    } catch {
-      // Пользователь мог быть создан раньше; ниже выполняется обычный вход.
-    }
-
-    await this.login(user.email, user.password);
-    return this.getAuthState();
-  },
-
   async getProfile(): Promise<Partial<UserProfile>> {
     const auth = await this.requireSession();
     return {
-      email: auth.email ?? DEMO_AUTH.email,
+      email: auth.email ?? '',
       role: auth.role === 'ADMIN' ? 'admin' : 'user',
     };
   },

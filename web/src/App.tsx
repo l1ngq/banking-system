@@ -45,7 +45,6 @@ function App() {
           error={auth.error}
           onLogin={banking.login}
           onRegister={banking.register}
-          onDemoLogin={banking.loginDemo}
         />
         <ToastStack toasts={banking.toasts} onRemove={banking.removeToast} />
       </>
@@ -60,7 +59,6 @@ function App() {
           activePage={activePage}
           theme={state.profile.theme}
           userName={state.profile.fullName}
-          onReset={banking.resetDemoData}
           onLogout={banking.logout}
           onProfileOpen={() => setActivePage('profile')}
           onThemeToggle={() => banking.setTheme(state.profile.theme === 'dark' ? 'light' : 'dark')}

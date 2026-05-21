@@ -1,24 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { getDemoUserByEmail, getDisplayNameByEmail, type DemoUser } from '../api/config';
+import { getDisplayNameByEmail } from '../api/config';
 import { coreApi, makeDisplayAccountNumber } from '../api/coreApi';
 import { currencyApi } from '../api/currencyApi';
 import { createBankingStateForEmail } from '../data/mockData';
-import type {
-  Action,
-  Account,
-  AssistantMessage,
-  BankingState,
-  CurrencyCode,
-  Theme,
-  Transaction,
-} from '../types/banking';
+import type { Action, Account, BankingState, CurrencyCode, Theme, Transaction } from '../types/banking';
 import { getTotalBalance } from '../utils/calculations';
 
-const STORAGE_KEY = 'mik-bank-state-coursework-final-v1';
-const DEMO_RUB_BALANCE = 150_000;
-const DEMO_USD_BALANCE = 1_000;
-const DEMO_EUR_BALANCE = 1_000;
+const STORAGE_KEY = 'mik-bank-state-clean-v1';
 
 type ToastType = 'success' | 'info' | 'error';
 type AuthStatus = 'checking' | 'guest' | 'authenticated';
@@ -41,33 +30,18 @@ function storageKeyForEmail(email?: string | null) {
   return normalizedEmail ? `${STORAGE_KEY}:${normalizedEmail}` : STORAGE_KEY;
 }
 
+function isSupportedBackendCurrency(currency: CurrencyCode) {
+  return currency === 'RUB' || currency === 'USD' || currency === 'EUR';
+}
+
 function readInitialState(email?: string | null): BankingState {
   const fallbackState = createBankingStateForEmail(email);
-  const demoUser = getDemoUserByEmail(email);
 
   try {
     const saved = localStorage.getItem(storageKeyForEmail(email));
     if (!saved) return fallbackState;
 
     const parsed = JSON.parse(saved) as BankingState;
-    const savedTheme = parsed.profile?.theme ?? fallbackState.profile.theme;
-
-    // Для демо-пользователей персональные витрины берём из актуального seed-файла.
-    // Так старые данные из localStorage не смогут вернуть неправильный город, цели или расходы.
-    if (demoUser) {
-      return {
-        ...fallbackState,
-        profile: {
-          ...fallbackState.profile,
-          theme: savedTheme,
-        },
-        rates: parsed.rates?.filter((rate) => rate.code === 'USD' || rate.code === 'EUR').length
-          ? parsed.rates.filter((rate) => rate.code === 'USD' || rate.code === 'EUR')
-          : fallbackState.rates,
-        news: parsed.news?.length ? parsed.news : fallbackState.news,
-        accounts: (parsed.accounts ?? fallbackState.accounts).filter((account) => isSupportedBackendCurrency(account.currency)),
-      };
-    }
 
     return {
       ...fallbackState,
@@ -75,17 +49,16 @@ function readInitialState(email?: string | null): BankingState {
       profile: {
         ...fallbackState.profile,
         ...parsed.profile,
+        email: email ?? parsed.profile?.email ?? fallbackState.profile.email,
       },
-      rates: parsed.rates?.filter((rate) => rate.code === 'USD' || rate.code === 'EUR').length
-        ? parsed.rates.filter((rate) => rate.code === 'USD' || rate.code === 'EUR')
-        : fallbackState.rates,
-      news: parsed.news?.length ? parsed.news : fallbackState.news,
+      rates: (parsed.rates ?? fallbackState.rates).filter((rate) => rate.code === 'USD' || rate.code === 'EUR'),
       accounts: (parsed.accounts ?? fallbackState.accounts).filter((account) => isSupportedBackendCurrency(account.currency)),
-      cards: (parsed.cards ?? fallbackState.cards).filter((card) => isSupportedBackendCurrency(card.currency)),
+      cards: [],
       transactions: (parsed.transactions ?? fallbackState.transactions).filter((transaction) => isSupportedBackendCurrency(transaction.currency)),
-      assistantMessages: parsed.assistantMessages ?? fallbackState.assistantMessages,
-      goals: (parsed.goals ?? fallbackState.goals).filter((goal) => isSupportedBackendCurrency(goal.currency)),
-      cashbackCategories: parsed.cashbackCategories ?? fallbackState.cashbackCategories,
+      news: [],
+      assistantMessages: [],
+      goals: [],
+      cashbackCategories: [],
     };
   } catch {
     return fallbackState;
@@ -125,44 +98,12 @@ function resolveBackendAccountId(value: string, accounts: Account[]) {
   return compactId || normalized;
 }
 
-function isSupportedBackendCurrency(currency: CurrencyCode) {
-  return currency === 'RUB' || currency === 'USD' || currency === 'EUR';
-}
-
 function isNumericAccountId(value: string) {
   return /^\d+$/.test(value.trim());
 }
 
 function isValidExternalAccountNumber(value: string) {
   return /^\d{10,30}$/.test(value.replace(/\D/g, ''));
-}
-
-function demoTargetBalance(currency: CurrencyCode) {
-  if (currency === 'RUB') return DEMO_RUB_BALANCE;
-  if (currency === 'USD') return DEMO_USD_BALANCE;
-  if (currency === 'EUR') return DEMO_EUR_BALANCE;
-  return 0;
-}
-
-function shouldPrepareDemoCabinet(email: string | null) {
-  return Boolean(getDemoUserByEmail(email));
-}
-
-function personalizeAccountName(account: Account, email?: string | null): Account {
-  const demoUser = getDemoUserByEmail(email);
-  if (!demoUser) return account;
-
-  const ownerSuffix = ` · ${demoUser.name}`;
-  const nameByCurrency: Record<string, string> = {
-    RUB: account.type === 'saving' ? 'Накопительный счёт' : 'Основной счёт',
-    USD: 'USD счёт',
-    EUR: 'EUR счёт',
-  };
-
-  return {
-    ...account,
-    name: `${nameByCurrency[account.currency] ?? account.name}${ownerSuffix}`,
-  };
 }
 
 export function useBankingState() {
@@ -198,9 +139,8 @@ export function useBankingState() {
     }));
   }
 
-  async function refreshAccounts(emailOverride?: string | null) {
-    const ownerEmail = emailOverride ?? auth.email;
-    const accounts = (await coreApi.getAccounts()).map((account) => personalizeAccountName(account, ownerEmail));
+  async function refreshAccounts() {
+    const accounts = await coreApi.getAccounts();
     setState((current) => ({ ...current, accounts }));
     return accounts;
   }
@@ -215,7 +155,10 @@ export function useBankingState() {
 
     setState((current) => ({
       ...current,
-      transactions: uniqueTransactions([...backendTransactions, ...current.transactions]),
+      transactions: uniqueTransactions([
+        ...backendTransactions,
+        ...current.transactions.filter((transaction) => transaction.status === 'pending'),
+      ]),
     }));
   }
 
@@ -225,92 +168,32 @@ export function useBankingState() {
       setState((current) => ({ ...current, rates }));
       return rates;
     } catch {
-      await currencyApi.seedDefaultRates();
-      const rates = await currencyApi.getRates();
-      setState((current) => ({ ...current, rates }));
-      return rates;
+      setState((current) => ({ ...current, rates: [] }));
+      return [];
     }
   }
 
   async function loadBackendData(showSuccessToast = false, emailOverride?: string | null) {
     const profile = await coreApi.getProfile();
     const profileEmail = profile.email ?? emailOverride ?? auth.email;
-    const demoProfile = getDemoUserByEmail(profileEmail)
-      ? createBankingStateForEmail(profileEmail).profile
-      : null;
 
     setState((current) => ({
       ...current,
-      profile: demoProfile
-        ? {
-            ...demoProfile,
-            theme: current.profile.theme,
-          }
-        : {
-            ...current.profile,
-            ...profile,
-            email: profileEmail ?? current.profile.email,
-            fullName: getDisplayNameByEmail(profileEmail, current.profile.fullName),
-          },
+      profile: {
+        ...current.profile,
+        ...profile,
+        email: profileEmail ?? current.profile.email,
+        fullName: getDisplayNameByEmail(profileEmail, current.profile.fullName),
+      },
     }));
 
     await refreshRates();
-    const accounts = await refreshAccounts(profileEmail);
+    const accounts = await refreshAccounts();
     await refreshHistory(accounts);
 
     if (showSuccessToast) {
       notify('success', 'Данные обновлены');
     }
-  }
-
-  async function ensureDemoCabinet(emailOverride?: string | null) {
-    const ownerEmail = emailOverride ?? auth.email;
-    await refreshRates();
-
-    let accounts = await refreshAccounts(ownerEmail);
-
-    const requiredAccounts: Array<Pick<Account, 'currency' | 'type'>> = [
-      { currency: 'RUB', type: 'debit' },
-      { currency: 'USD', type: 'debit' },
-      { currency: 'EUR', type: 'debit' },
-    ];
-
-    for (const required of requiredAccounts) {
-      let account = accounts.find(
-        (item) => item.status === 'active' && item.currency === required.currency && item.type === required.type,
-      );
-
-      if (!account) {
-        account = personalizeAccountName(await coreApi.createAccount(required), ownerEmail);
-        accounts = replaceAccount(accounts, account);
-      }
-    }
-
-    for (const account of accounts.filter((item) => item.status === 'active' && isSupportedBackendCurrency(item.currency))) {
-      const targetBalance = demoTargetBalance(account.currency);
-      if (targetBalance > 0 && account.balance < targetBalance) {
-        const updatedAccount = personalizeAccountName(
-          await coreApi.deposit(account.id, Number((targetBalance - account.balance).toFixed(2))),
-          ownerEmail,
-        );
-        accounts = replaceAccount(accounts, updatedAccount);
-      }
-    }
-
-    setState((current) => ({ ...current, accounts }));
-    await refreshHistory(accounts);
-  }
-
-  async function prepareDemoAccountIfNeeded(account: Account, amount: number) {
-    if (!shouldPrepareDemoCabinet(auth.email) || account.balance >= amount) {
-      return account;
-    }
-
-    const minimumBalance = Math.max(amount + demoTargetBalance(account.currency) * 0.1, amount);
-    const refillAmount = Number((minimumBalance - account.balance).toFixed(2));
-    const updatedAccount = personalizeAccountName(await coreApi.deposit(account.id, refillAmount), auth.email);
-    updateAccountInState(updatedAccount);
-    return updatedAccount;
   }
 
   async function bootstrapFromBackend() {
@@ -327,9 +210,6 @@ export function useBankingState() {
       setState(readInitialState(sessionEmail));
       setAuth({ status: 'authenticated', email: sessionEmail, error: null });
       await loadBackendData(true, sessionEmail);
-      if (shouldPrepareDemoCabinet(sessionEmail)) {
-        await ensureDemoCabinet(sessionEmail);
-      }
     } catch {
       setAuth({ status: 'guest', email: null, error: null });
     }
@@ -351,9 +231,6 @@ export function useBankingState() {
       setState(readInitialState(sessionEmail));
       setAuth({ status: 'authenticated', email: sessionEmail, error: null });
       await loadBackendData(true, sessionEmail);
-      if (shouldPrepareDemoCabinet(sessionEmail)) {
-        await ensureDemoCabinet(sessionEmail);
-      }
       notify('success', 'Вы вошли в личный кабинет');
     } catch (error) {
       setAuth({
@@ -375,9 +252,6 @@ export function useBankingState() {
       setState(readInitialState(sessionEmail));
       setAuth({ status: 'authenticated', email: sessionEmail, error: null });
       await loadBackendData(true, sessionEmail);
-      if (shouldPrepareDemoCabinet(sessionEmail)) {
-        await ensureDemoCabinet(sessionEmail);
-      }
       notify('success', 'Аккаунт создан');
     } catch (error) {
       setAuth({
@@ -388,46 +262,16 @@ export function useBankingState() {
     }
   }
 
-  async function loginDemo(user: DemoUser) {
-    setAuth({ status: 'checking', email: null, error: null });
-
-    try {
-      const session = await coreApi.signInDemoSession(user);
-      const sessionEmail = session.email ?? user.email;
-      setState(readInitialState(sessionEmail));
-      setAuth({ status: 'authenticated', email: sessionEmail, error: null });
-      await loadBackendData(false, sessionEmail);
-      await ensureDemoCabinet(sessionEmail);
-      notify('success', `Демо-кабинет ${user.name} готов`, 'Счета, баланс и курсы подготовлены');
-    } catch (error) {
-      setAuth({
-        status: 'guest',
-        email: null,
-        error: error instanceof Error ? error.message : 'Не удалось войти в демо-аккаунт.',
-      });
-    }
-  }
-
   async function logout() {
     try {
       await coreApi.logout();
     } catch {
-      // The local session should be cleared in the UI even if the backend already ended it.
+      // UI session should be cleared even if backend session has already expired.
     }
 
     setAuth({ status: 'guest', email: null, error: null });
     setState(createBankingStateForEmail(null));
     notify('info', 'Вы вышли из личного кабинета');
-  }
-
-  function resetDemoData() {
-    const email = auth.email;
-    localStorage.removeItem(storageKeyForEmail(email));
-    setState(createBankingStateForEmail(email));
-    if (auth.status === 'authenticated') {
-      void loadBackendData(false, email);
-    }
-    notify('info', 'Личные данные интерфейса обновлены');
   }
 
   function setTheme(theme: Theme) {
@@ -460,10 +304,7 @@ export function useBankingState() {
 
     try {
       const account = await coreApi.createAccount({ currency: payload.currency, type: payload.type });
-      const namedAccount = payload.name
-        ? { ...account, name: payload.name }
-        : personalizeAccountName(account, auth.email);
-
+      const namedAccount = payload.name ? { ...account, name: payload.name } : account;
       updateAccountInState(namedAccount);
       notify('success', 'Счёт открыт', namedAccount.name);
     } catch (error) {
@@ -502,7 +343,7 @@ export function useBankingState() {
         return;
       }
 
-      const updatedAccount = personalizeAccountName(await coreApi.deposit(account.id, amount), auth.email);
+      const updatedAccount = await coreApi.deposit(account.id, amount);
       updateAccountInState(updatedAccount);
 
       const freshAccounts = await refreshAccounts();
@@ -522,7 +363,7 @@ export function useBankingState() {
     try {
       await refreshRates();
       const accounts = await refreshAccounts();
-      let account = accounts.find((item) => item.id === payload.fromAccountId);
+      const account = accounts.find((item) => item.id === payload.fromAccountId);
       if (!account) {
         notify('error', 'Счёт отправителя не найден');
         return;
@@ -551,11 +392,10 @@ export function useBankingState() {
           ...current,
           transactions: uniqueTransactions([draftTransaction, ...current.transactions]),
         }));
-        notify('info', 'Черновик перевода создан', 'Фактическая отправка будет доступна после реализации этой функции в системе банка');
+        notify('info', 'Черновик перевода создан', 'Фактическая отправка будет доступна после реализации этой функции в backend');
         return;
       }
 
-      account = await prepareDemoAccountIfNeeded(account, payload.amount);
       if (account.balance < payload.amount) {
         notify('error', 'Недостаточно средств', 'Сначала пополните выбранный счёт');
         return;
@@ -590,19 +430,18 @@ export function useBankingState() {
 
     try {
       const accounts = await refreshAccounts();
-      let account = accounts.find((item) => item.id === payload.accountId);
+      const account = accounts.find((item) => item.id === payload.accountId);
       if (!account) {
         notify('error', 'Счёт не найден');
         return;
       }
 
-      account = await prepareDemoAccountIfNeeded(account, payload.amount);
       if (account.balance < payload.amount) {
         notify('error', 'Недостаточно средств', 'Сначала пополните выбранный счёт');
         return;
       }
 
-      const updatedAccount = personalizeAccountName(await coreApi.withdraw(account.id, payload.amount), auth.email);
+      const updatedAccount = await coreApi.withdraw(account.id, payload.amount);
       updateAccountInState(updatedAccount);
       const freshAccounts = await refreshAccounts();
       await refreshHistory(freshAccounts);
@@ -626,7 +465,7 @@ export function useBankingState() {
     try {
       await refreshRates();
       let accounts = await refreshAccounts();
-      let account = accounts.find((item) => item.id === payload.fromAccountId);
+      const account = accounts.find((item) => item.id === payload.fromAccountId);
       if (!account) {
         notify('error', 'Счёт списания не найден');
         return;
@@ -637,7 +476,6 @@ export function useBankingState() {
         return;
       }
 
-      account = await prepareDemoAccountIfNeeded(account, payload.amount);
       if (account.balance < payload.amount) {
         notify('error', 'Недостаточно средств', 'Сначала пополните выбранный счёт');
         return;
@@ -648,7 +486,7 @@ export function useBankingState() {
       );
 
       if (!targetAccount) {
-        targetAccount = personalizeAccountName(await coreApi.createAccount({ currency: payload.toCurrency, type: account.type }), auth.email);
+        targetAccount = await coreApi.createAccount({ currency: payload.toCurrency, type: account.type });
         accounts = replaceAccount(accounts, targetAccount);
       }
 
@@ -716,50 +554,6 @@ export function useBankingState() {
     }
   }
 
-  function sendAssistantMessage(text: string) {
-    if (!text.trim()) return;
-
-    const userMessage: AssistantMessage = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      text,
-      createdAt: new Date().toISOString(),
-    };
-
-    const lower = text.toLowerCase();
-    const total = getTotalBalance(state.accounts, state.rates);
-    let answer = 'Я могу подсказать информацию по вашим счетам, операциям и валюте.';
-
-    if (lower.includes('расход') || lower.includes('операц')) {
-      const last = state.transactions
-        .slice(0, 4)
-        .map((tx) => `${tx.title}: ${tx.amount} ${tx.currency}`)
-        .join('; ');
-      answer = last ? `Последние операции: ${last}.` : 'История операций пока пустая.';
-    }
-
-    if (lower.includes('баланс') || lower.includes('деньг')) {
-      answer = `Общий баланс по активным счетам примерно ${Math.round(total).toLocaleString('ru-RU')} ₽.`;
-    }
-
-    if (lower.includes('валют') || lower.includes('курс')) {
-      const rates = state.rates.map((rate) => `${rate.code}: ${rate.sell.toFixed(2)} ₽`).join(', ');
-      answer = `Текущие курсы валют: ${rates}.`;
-    }
-
-    const assistantMessage: AssistantMessage = {
-      id: crypto.randomUUID(),
-      role: 'assistant',
-      text: answer,
-      createdAt: new Date().toISOString(),
-    };
-
-    setState((current) => ({
-      ...current,
-      assistantMessages: [...current.assistantMessages, userMessage, assistantMessage],
-    }));
-  }
-
   const summary = useMemo(
     () => ({
       totalBalance: getTotalBalance(state.accounts, state.rates),
@@ -778,9 +572,7 @@ export function useBankingState() {
     removeToast,
     login,
     register,
-    loginDemo,
     logout,
-    resetDemoData,
     setTheme,
     updateProfile,
     openAccount,
@@ -790,6 +582,5 @@ export function useBankingState() {
     pay,
     exchange,
     submitAction,
-    sendAssistantMessage,
   };
 }
