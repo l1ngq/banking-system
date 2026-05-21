@@ -1,5 +1,4 @@
 import { FormEvent, useMemo, useState } from 'react';
-import { DEMO_USERS, type DemoUser } from '../api/config';
 
 type AuthMode = 'login' | 'register';
 
@@ -8,13 +7,12 @@ interface AuthPageProps {
   error?: string | null;
   onLogin: (email: string, password: string) => Promise<void>;
   onRegister: (email: string, password: string) => Promise<void>;
-  onDemoLogin: (user: DemoUser) => Promise<void>;
 }
 
-function AuthPage({ loading = false, error, onLogin, onRegister, onDemoLogin }: AuthPageProps) {
+function AuthPage({ loading = false, error, onLogin, onRegister }: AuthPageProps) {
   const [mode, setMode] = useState<AuthMode>('login');
-  const [email, setEmail] = useState(DEMO_USERS[0]?.email ?? 'igor@example.com');
-  const [password, setPassword] = useState(DEMO_USERS[0]?.password ?? 'password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
 
   const isRegister = mode === 'register';
@@ -27,8 +25,8 @@ function AuthPage({ loading = false, error, onLogin, onRegister, onDemoLogin }: 
   const subtitle = useMemo(
     () =>
       isRegister
-        ? 'Укажите почту и пароль, чтобы открыть личный кабинет.'
-        : 'Введите данные или выберите демо-пользователя для проверки операций.',
+        ? 'Укажите почту и пароль, чтобы открыть новый личный кабинет.'
+        : 'Введите данные, чтобы продолжить работу с личным кабинетом.',
     [isRegister],
   );
 
@@ -37,8 +35,14 @@ function AuthPage({ loading = false, error, onLogin, onRegister, onDemoLogin }: 
     setLocalError(null);
 
     const normalizedEmail = email.trim();
+
     if (!normalizedEmail || !password) {
       setLocalError('Введите почту и пароль.');
+      return;
+    }
+
+    if (!normalizedEmail.includes('@')) {
+      setLocalError('Введите корректную почту.');
       return;
     }
 
@@ -54,109 +58,120 @@ function AuthPage({ loading = false, error, onLogin, onRegister, onDemoLogin }: 
     }
   }
 
-  async function handleDemoLogin(user: DemoUser) {
+  function switchMode(nextMode: AuthMode) {
+    setMode(nextMode);
     setLocalError(null);
-    setEmail(user.email);
-    setPassword(user.password);
-    await onDemoLogin(user);
   }
 
   return (
     <main className="auth-shell">
-      <section className="auth-hero-card" aria-label="МИК Банк">
-        <div className="auth-hero-card__brand">
-          <span className="auth-logo">М</span>
-          <span>
-            <strong>МИК Банк</strong>
-            <small>личный кабинет</small>
-          </span>
-        </div>
+      <div className="auth-layout">
+        <section className="auth-hero" aria-label="МИК Банк">
+          <div className="auth-hero__top">
+            <div className="auth-brand">
+              <div className="auth-brand__logo">М</div>
+              <div>
+                <strong>МИК Банк</strong>
+                <span>личный кабинет</span>
+              </div>
+            </div>
+          </div>
 
-        <div className="auth-hero-card__content">
-          <p className="eyebrow">Ваши финансы</p>
-          <h1>Банк всегда рядом</h1>
-          <p>Управляйте счетами, переводами и валютой в едином пространстве.</p>
-        </div>
+          <div className="auth-hero__content">
+            <p className="auth-hero__eyebrow">онлайн-банк</p>
 
-        <div className="auth-preview-card auth-preview-card--main">
-          <span>Баланс</span>
-          <strong>₽ 150 000</strong>
-          <small>Демо-счёт</small>
-        </div>
-        <div className="auth-preview-card auth-preview-card--small">
-          <span>Курс USD</span>
-          <strong>90.00 ₽</strong>
-        </div>
-      </section>
+            <h1 className="auth-hero__title">
+              Управляйте счетами
+              <br />
+              просто и удобно
+            </h1>
 
-      <section className="auth-panel" aria-label="Авторизация">
-        <div className="auth-panel__top">
-          <span className="auth-badge">Безопасный вход</span>
-          <h2>{title}</h2>
-          <p>{subtitle}</p>
-        </div>
+            <p className="auth-hero__subtitle">
+              В одном кабинете доступны счета, переводы, операции и работа с валютой.
+              После регистрации вы получаете новый пустой личный кабинет.
+            </p>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <label>
-            <span>Почта</span>
-            <input
-              type="email"
-              autoComplete="email"
-              value={email}
-              placeholder="igor@example.com"
-              onChange={(event) => setEmail(event.target.value)}
-              disabled={loading}
-            />
-          </label>
+            <div className="auth-hero__features">
+              <article className="auth-feature-card">
+                <span className="auth-feature-card__label">Счета</span>
+                <strong>Открытие и управление</strong>
+                <p>Создавайте счета, просматривайте баланс и выполняйте основные операции.</p>
+              </article>
 
-          <label>
-            <span>Пароль</span>
-            <input
-              type="password"
-              autoComplete={isRegister ? 'new-password' : 'current-password'}
-              value={password}
-              placeholder="Введите пароль"
-              onChange={(event) => setPassword(event.target.value)}
-              disabled={loading}
-            />
-          </label>
+              <article className="auth-feature-card">
+                <span className="auth-feature-card__label">Переводы</span>
+                <strong>Быстрые операции</strong>
+                <p>Переводите деньги между своими счетами и отслеживайте историю операций.</p>
+              </article>
 
-          {(localError || error) && <div className="auth-error">{localError || error}</div>}
+              <article className="auth-feature-card">
+                <span className="auth-feature-card__label">Валюта</span>
+                <strong>RUB · USD · EUR</strong>
+                <p>Работайте с основными валютами и выполняйте обмен внутри кабинета.</p>
+              </article>
+            </div>
+          </div>
 
-          <button className="auth-submit" type="submit" disabled={loading}>
-            {loading ? 'Проверяем данные…' : isRegister ? 'Зарегистрироваться' : 'Войти'}
-          </button>
-        </form>
+        </section>
 
-        <div className="auth-demo-list" aria-label="Демо-пользователи">
-          <span>Демо-пользователи</span>
-          {DEMO_USERS.map((user) => (
-            <button
-              className="auth-demo-button"
-              key={user.email}
-              type="button"
-              onClick={() => void handleDemoLogin(user)}
-              disabled={loading}
-            >
-              Войти как {user.name}
+        <section className="auth-panel" aria-label="Авторизация">
+          <div className="auth-panel__top">
+            <span className="auth-badge">Безопасный вход</span>
+            <h2>{title}</h2>
+            <p>{subtitle}</p>
+          </div>
+
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <label>
+              <span>Почта</span>
+              <input
+                type="email"
+                autoComplete="email"
+                value={email}
+                placeholder="Введите почту"
+                onChange={(event) => setEmail(event.target.value)}
+                disabled={loading}
+              />
+            </label>
+
+            <label>
+              <span>Пароль</span>
+              <input
+                type="password"
+                autoComplete={isRegister ? 'new-password' : 'current-password'}
+                value={password}
+                placeholder="Введите пароль"
+                onChange={(event) => setPassword(event.target.value)}
+                disabled={loading}
+              />
+            </label>
+
+            {(localError || error) && <div className="auth-error">{localError || error}</div>}
+
+            <button className="auth-submit" type="submit" disabled={loading}>
+              {loading ? 'Подождите…' : isRegister ? 'Создать аккаунт' : 'Войти'}
             </button>
-          ))}
-        </div>
+          </form>
 
-        <div className="auth-switch">
-          <span>{isRegister ? 'Уже есть аккаунт?' : 'Нет аккаунта?'}</span>
-          <button
-            type="button"
-            onClick={() => {
-              setLocalError(null);
-              setMode(isRegister ? 'login' : 'register');
-            }}
-            disabled={loading}
-          >
-            {isRegister ? 'Войти' : 'Создать аккаунт'}
-          </button>
-        </div>
-      </section>
+          <div className="auth-switch">
+            {isRegister ? (
+              <>
+                Уже есть аккаунт?{' '}
+                <button type="button" onClick={() => switchMode('login')} disabled={loading}>
+                  Войти
+                </button>
+              </>
+            ) : (
+              <>
+                Нет аккаунта?{' '}
+                <button type="button" onClick={() => switchMode('register')} disabled={loading}>
+                  Создать
+                </button>
+              </>
+            )}
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
