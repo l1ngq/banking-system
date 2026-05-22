@@ -5,6 +5,7 @@ on:
     branches: ["main"]
     paths:
       - "web/**"
+      - ".github/workflows/frontend-ci.yml"
   workflow_dispatch:
 
 jobs:
@@ -17,17 +18,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.4.0
         with:
           node-version: "24.x"
           cache: "npm"
-          cache-dependency-path: "web/**/package-lock.json"
+          cache-dependency-path: "web/package-lock.json"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --loglevel=verbose
 
       - name: build
         run: npm run build

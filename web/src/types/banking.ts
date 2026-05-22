@@ -1,5 +1,5 @@
 export type CurrencyCode = 'RUB' | 'USD' | 'EUR';
-export type Page = 'dashboard' | 'accounts' | 'cards' | 'payments' | 'currency' | 'news' | 'assistant' | 'profile';
+export type Page = 'dashboard' | 'accounts' | 'payments' | 'currency' | 'profile';
 export type Action = 'topup' | 'transfer' | 'pay' | 'exchange' | 'openAccount';
 export type Theme = 'light' | 'dark';
 
