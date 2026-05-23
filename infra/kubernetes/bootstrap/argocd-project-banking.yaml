@@ -8,7 +8,10 @@ spec:
   sourceRepos:
     - "https://github.com/l1ngq/banking-system.git"
     - "https://charts.bitnami.com/bitnami"
+    - "oci://registry-1.docker.io/soldevelo/kafka-chart"
   destinations:
+    - namespace: argocd
+      server: "https://kubernetes.default.svc"
     - namespace: banking-system
       server: "https://kubernetes.default.svc"
   clusterResourceWhitelist: []

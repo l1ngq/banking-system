@@ -1,23 +1,26 @@
+# application.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: redis-master
+  name: kafka-1
   namespace: argocd
 spec:
   project: banking
   source:
-    repoURL: "https://charts.bitnami.com/bitnami"
-    chart: redis
-    targetRevision: 25.5.3
+    repoURL: "oci://registry-1.docker.io/soldevelo/kafka-chart"
+    chart: kafka
+    targetRevision: 32.4.4
     helm:
       values: |
-        architecture: standalone
-        auth:
+        replicaCount: 3
+        persistence:
           enabled: true
-          existingSecret: redis-secret
-        master:
-          persistence:
-            size: 1Gi
+          size: 2Gi
+        resources:
+          requests:
+            memory: "512Mi"
+          limits:
+            memory: "1024Mi"
   destination:
     server: "https://kubernetes.default.svc"
     namespace: banking-system
