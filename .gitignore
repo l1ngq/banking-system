@@ -7,3 +7,12 @@ dist
 .DS_Store
 .vscode
 .idea
+
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+.vagrant/
+terraform.tfvars
+Vagrantfile
+kubeconfig

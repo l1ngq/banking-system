@@ -1,0 +1,61 @@
+---
+- name: Install basic tools (curl, wget, htop, jq)
+  apt:
+    name:
+      - curl
+      - wget
+      - htop
+      - jq
+      - ca-certificates
+      - socat
+      - conntrack
+      - iptables
+    state: present
+    update_cache: yes
+
+- name: Disable swap immediately
+  command: swapoff -a
+  changed_when: false
+
+- name: Disable swap permanently
+  replace:
+    path: /etc/fstab
+    regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+    replace: '# \1'
+
+- name: Enable IPv4 forwarding for Kubernetes
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Load kernel modules for Kubernetes networking
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: Persist kernel modules for Kubernetes networking
+  copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      overlay
+      br_netfilter
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable bridge netfilter for Kubernetes
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_set: yes
+    state: present
+    reload: yes
+  loop:
+    - { name: "net.bridge.bridge-nf-call-iptables", value: 1 }
+    - { name: "net.bridge.bridge-nf-call-ip6tables", value: 1 }
