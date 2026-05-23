@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgres-core
+  namespace: argocd
+spec:
+  project: banking
+  source:
+    repoURL: "https://charts.bitnami.com/bitnami"
+    chart: postgresql
+    targetRevision: 18.6.7
+    helm:
+      values: |
+        auth:
+          existingSecret: postgres-core-secret
+          database: "core_db"
+        primary:
+          persistence:
+            size: 2Gi
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: banking-system
