@@ -15,3 +15,4 @@ dist
 .vagrant/
 terraform.tfvars
 Vagrantfile
+kubeconfig
