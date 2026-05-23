@@ -2,10 +2,10 @@
 - name: Install K3s Master
   shell: >
     curl -sfL https://get.k3s.io |
-    INSTALL_K3S_EXEC="server --node-ip {{ internal_ip }} --bind-address {{ internal_ip }} --write-kubeconfig-mode 644"
+    INSTALL_K3S_EXEC="server --node-ip {{ internal_ip }} --bind-address {{ internal_ip }} --write-kubeconfig-mode 644 --flannel-iface=enp0s8"
     sh -
-  args:
-    creates: /etc/rancher/k3s/k3s.yaml
+  #args:
+  # creates: /etc/rancher/k3s/k3s.yaml
 
 - name: Read K3s node-token
   command: cat /var/lib/rancher/k3s/server/node-token
