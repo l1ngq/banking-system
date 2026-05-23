@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: banking
+  namespace: argocd
+spec:
+  description: Banking applications project
+  sourceRepos:
+    - "https://github.com/l1ngq/banking-system.git"
+    - "https://charts.bitnami.com/bitnami"
+  destinations:
+    - namespace: banking-system
+      server: "https://kubernetes.default.svc"
+  clusterResourceWhitelist: []
+  roles: []
