@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: postgres-currencies
-  namespace: argocd
+  namespace: banking-system
 spec:
   project: banking
   source:
