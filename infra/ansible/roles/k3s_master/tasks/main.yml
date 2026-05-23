@@ -1,0 +1,20 @@
+---
+- name: Install K3s Master
+  shell: >
+    curl -sfL https://get.k3s.io |
+    INSTALL_K3S_EXEC="server --node-ip {{ internal_ip }} --bind-address {{ internal_ip }} --write-kubeconfig-mode 644"
+    sh -
+  args:
+    creates: /etc/rancher/k3s/k3s.yaml
+
+- name: Read K3s node-token
+  command: cat /var/lib/rancher/k3s/server/node-token
+  register: k3s_token
+  changed_when: false
+  no_log: true
+
+- name: Fetch kubeconfig to local machine
+  fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: ./kubeconfig
+    flat: yes
