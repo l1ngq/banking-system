@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+
+# Создаем 5 маленьких независимых ConfigMap'ов
+configMapGenerator:
+  - name: dashboard-traefik
+    files:
+      - traefik.json=traefik.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+
+  - name: dashboard-argocd
+    files:
+      - argocd.json=argocd.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+
+  - name: dashboard-node-exporter
+    files:
+      - node-exporter.json=node-exporter.json
+    options:
+      labels:
+        grafana_dashboard: "1"
