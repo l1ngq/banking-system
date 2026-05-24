@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: currencies-ingress
+  namespace: banking-system
+spec:
+  rules:
+    - host: iate.space
+      http:
+        paths:
+          - path: /api/currencies
+            pathType: Prefix
+            backend:
+              service:
+                name: currencies-service
+                port:
+                  number: 8081
