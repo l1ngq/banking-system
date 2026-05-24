@@ -16,7 +16,7 @@ spec:
       containers:
         - name: frontend
           image: ghcr.io/l1ngq/banking-frontend:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
           resources:

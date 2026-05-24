@@ -5,10 +5,17 @@ on:
     tags:
       - "currencies-v*.*.*"
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag to deploy
+        required: true
+        type: string
+        default: ""
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/banking-currencies
+  RELEASE_TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
 
 jobs:
   build-and-push:
@@ -22,14 +29,14 @@ jobs:
         uses: actions/checkout@v6.0.2
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v4.1.0
+        uses: docker/login-action@v4.2.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v7.1.0
+        uses: docker/build-push-action@v7.2.0
         with:
           context: ./backend/banking-system-v1
           file: ./backend/banking-system-v1/Dockerfile
@@ -37,39 +44,5 @@ jobs:
             SERVICE=currencies-service
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_TAG }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Deploy to Server
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          script: |
-            if [ ! -d ~/banking-system ]; then
-              git clone https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git ~/banking-system
-            else
-              cd ~/banking-system
-              git pull origin main
-            fi
-
-            cd ~/banking-system/infra/docker-compose
-
-            if ! grep -q "^GITHUB_REPOSITORY_OWNER=" .env.versions; then
-              echo "GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}" >> .env.versions
-            fi
-
-            if grep -q "^CURRENCIES_VERSION=" .env.versions; then
-              sed -i "s/^CURRENCIES_VERSION=.*/CURRENCIES_VERSION=${{ github.ref_name }}/" .env.versions
-            else
-              echo "CURRENCIES_VERSION=${{ github.ref_name }}" >> .env.versions
-            fi
-
-            docker compose --env-file .env.versions pull currencies-service
-            docker compose --env-file .env.versions up -d currencies-service
