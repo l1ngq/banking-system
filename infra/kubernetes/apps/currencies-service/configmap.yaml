@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: currencies-service-config
+  namespace: banking-system
+data:
+  DATABASE_USERNAME: postgres
+  CURRENCIES_DATABASE_URL: jdbc:postgresql://postgres-currencies-postgresql:5432/currencies_db
+  APP_DATABASE_SCHEMA: currencies

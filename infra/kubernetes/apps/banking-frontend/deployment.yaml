@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banking-frontend
+  namespace: banking-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: banking-frontend
+  template:
+    metadata:
+      labels:
+        app: banking-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/l1ngq/banking-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
