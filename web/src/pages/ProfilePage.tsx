@@ -9,10 +9,39 @@ interface ProfilePageProps {
   onUpdate: (payload: Partial<UserProfile>) => void;
 }
 
-function ProfilePage({ profile, goals, cashbackCategories, onUpdate }: ProfilePageProps) {
+interface ProfileFormProps {
+  profile: UserProfile;
+  onUpdate: (payload: Partial<UserProfile>) => void;
+}
+
+function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
   const [name, setName] = useState(profile.fullName);
   const [phone, setPhone] = useState(profile.phone);
   const [city, setCity] = useState(profile.city);
+
+
+  return (
+    <div className="form form--page">
+      <label>
+        Имя
+        <input value={name} onChange={(event) => setName(event.target.value)} />
+      </label>
+      <label>
+        Телефон
+        <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Не указан" />
+      </label>
+      <label>
+        Город
+        <input value={city} onChange={(event) => setCity(event.target.value)} placeholder="Не указан" />
+      </label>
+      <button className="button-primary" onClick={() => onUpdate({ fullName: name, phone, city })}>Сохранить</button>
+    </div>
+  );
+}
+
+function ProfilePage({ profile, goals, cashbackCategories, onUpdate }: ProfilePageProps) {
+  const profileFormKey = `${profile.email}-${profile.fullName}-${profile.phone}-${profile.city}`;
+
 
   return (
     <div className="page-grid">
@@ -33,22 +62,7 @@ function ProfilePage({ profile, goals, cashbackCategories, onUpdate }: ProfilePa
             <div><span>Город</span><strong>{profile.city || 'Не указан'}</strong></div>
             <div><span>Статус</span><strong>{profile.role === 'admin' ? 'Администратор' : 'Пользователь'}</strong></div>
           </div>
-
-          <div className="form form--page">
-            <label>
-              Имя
-              <input value={name} onChange={(event) => setName(event.target.value)} />
-            </label>
-            <label>
-              Телефон
-              <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Не указан" />
-            </label>
-            <label>
-              Город
-              <input value={city} onChange={(event) => setCity(event.target.value)} placeholder="Не указан" />
-            </label>
-            <button className="button-primary" onClick={() => onUpdate({ fullName: name, phone, city })}>Сохранить</button>
-          </div>
+          <ProfileForm key={profileFormKey} profile={profile} onUpdate={onUpdate} />
         </section>
 
         <section className="card">

@@ -194,7 +194,6 @@ html[data-theme='dark'] .auth-badge { color: var(--color-accent); }
 @media (max-width: 560px) { .auth-shell { padding: 14px; } .auth-hero-card, .auth-panel { border-radius: 28px; } .auth-hero-card { min-height: 360px; } .auth-preview-card--main { display: none; } .auth-switch { flex-direction: column; align-items: center; } }
 
 
-/* Финальная визуальная полировка и адаптивность */
 * { box-sizing: border-box; }
 html { min-width: 320px; }
 body { overflow-x: hidden; }
@@ -579,59 +578,5 @@ button:disabled { cursor: not-allowed; }
 
   .auth-feature-card {
     min-height: auto;
-  }
-}
-.account-card__main {
-  min-width: 0;
-}
-
-.account-card__number-row {
-  display: grid;
-  gap: 10px;
-  margin: 6px 0 8px;
-}
-
-.account-number {
-  margin: 0;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.account-card__number-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.text-button--small {
-  min-height: 34px;
-  padding: 7px 11px;
-  font-size: 13px;
-}
-
-.transfer-mode {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.transfer-mode button {
-  min-height: 44px;
-  justify-content: center;
-}
-
-@media (max-width: 680px) {
-  .account-card__number-actions {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .text-button--small {
-    width: 100%;
-    min-height: 42px;
-  }
-
-  .transfer-mode {
-    grid-template-columns: 1fr;
   }
 }

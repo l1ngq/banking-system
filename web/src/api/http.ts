@@ -98,8 +98,8 @@ export async function request<T>(url: string, options: RequestOptions = {}): Pro
       try {
         const payload = (await response.json()) as UniversalResponse<unknown>;
         message = payload.message || message;
-      } catch {
-        // response is not JSON
+      } catch (error) {
+        void error;
       }
       throw new Error(toFriendlyError(message, response.status));
     }
@@ -139,7 +139,7 @@ export async function withFallback<T>(loader: () => Promise<T>, fallback: T): Pr
 export async function refreshCsrf(coreUrl: string) {
   try {
     await request(`${coreUrl}/api/auth/me`, { raw: true, timeoutMs: 5000 });
-  } catch {
-    // /me can return 401 before login; the CSRF cookie is still issued by backend.
+  } catch (error) {
+    void error;
   }
 }
