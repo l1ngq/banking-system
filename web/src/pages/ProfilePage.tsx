@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { CashbackCategory, SavingGoal, UserProfile } from '../types/banking';
 import { formatMoney } from '../utils/formatters';
 
@@ -13,12 +13,6 @@ function ProfilePage({ profile, goals, cashbackCategories, onUpdate }: ProfilePa
   const [name, setName] = useState(profile.fullName);
   const [phone, setPhone] = useState(profile.phone);
   const [city, setCity] = useState(profile.city);
-
-  useEffect(() => {
-    setName(profile.fullName);
-    setPhone(profile.phone);
-    setCity(profile.city);
-  }, [profile.fullName, profile.phone, profile.city]);
 
   return (
     <div className="page-grid">
