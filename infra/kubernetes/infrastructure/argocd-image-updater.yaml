@@ -1,0 +1,29 @@
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: banking-apps-updater
+  namespace: argocd
+spec:
+  writeBackConfig:
+    method: git
+    gitConfig:
+      branch: main
+      writeBackTarget: kustomization
+  applicationRefs:
+    - namePattern: banking-apps
+      images:
+        - alias: frontend
+          imageName: ghcr.io/l1ngq/banking-frontend
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: regexp:^web-v[0-9]+\.[0-9]+\.[0-9]+$
+        - alias: core
+          imageName: ghcr.io/l1ngq/banking-core
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: regexp:^core-v[0-9]+\.[0-9]+\.[0-9]+$
+        - alias: currencies
+          imageName: ghcr.io/l1ngq/banking-currencies
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: regexp:^currencies-v[0-9]+\.[0-9]+\.[0-9]+$
