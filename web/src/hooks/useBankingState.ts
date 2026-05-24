@@ -6,8 +6,15 @@ import { currencyApi } from '../api/currencyApi';
 import { createBankingStateForEmail } from '../data/mockData';
 import type { Action, Account, BankingState, CurrencyCode, Theme, Transaction } from '../types/banking';
 import { getTotalBalance } from '../utils/calculations';
-
-const STORAGE_KEY = 'mik-bank-state-clean-v1';
+import {
+  isNumericAccountId,
+  isSupportedBackendCurrency,
+  isValidExternalAccountNumber,
+  replaceAccount,
+  resolveBackendAccountId,
+  uniqueTransactions,
+} from '../services/bankingHelpers';
+import { readBankingState, saveBankingState } from '../services/bankingStorage';
 
 type ToastType = 'success' | 'info' | 'error';
 type AuthStatus = 'checking' | 'guest' | 'authenticated';
@@ -25,95 +32,14 @@ export interface Toast {
   text?: string;
 }
 
-function storageKeyForEmail(email?: string | null) {
-  const normalizedEmail = email?.trim().toLowerCase();
-  return normalizedEmail ? `${STORAGE_KEY}:${normalizedEmail}` : STORAGE_KEY;
-}
-
-function isSupportedBackendCurrency(currency: CurrencyCode) {
-  return currency === 'RUB' || currency === 'USD' || currency === 'EUR';
-}
-
-function readInitialState(email?: string | null): BankingState {
-  const fallbackState = createBankingStateForEmail(email);
-
-  try {
-    const saved = localStorage.getItem(storageKeyForEmail(email));
-    if (!saved) return fallbackState;
-
-    const parsed = JSON.parse(saved) as BankingState;
-
-    return {
-      ...fallbackState,
-      ...parsed,
-      profile: {
-        ...fallbackState.profile,
-        ...parsed.profile,
-        email: email ?? parsed.profile?.email ?? fallbackState.profile.email,
-      },
-      rates: (parsed.rates ?? fallbackState.rates).filter((rate) => rate.code === 'USD' || rate.code === 'EUR'),
-      accounts: (parsed.accounts ?? fallbackState.accounts).filter((account) => isSupportedBackendCurrency(account.currency)),
-      cards: [],
-      transactions: (parsed.transactions ?? fallbackState.transactions).filter((transaction) => isSupportedBackendCurrency(transaction.currency)),
-      news: [],
-      assistantMessages: [],
-      goals: [],
-      cashbackCategories: [],
-    };
-  } catch {
-    return fallbackState;
-  }
-}
-
-function uniqueTransactions(items: Transaction[]) {
-  const map = new Map<string, Transaction>();
-  items.forEach((item) => map.set(item.id, item));
-  return Array.from(map.values()).sort(
-    (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
-  );
-}
-
-function replaceAccount(accounts: Account[], updated: Account) {
-  const exists = accounts.some((account) => account.id === updated.id);
-  if (!exists) return [updated, ...accounts];
-  return accounts.map((account) => (account.id === updated.id ? { ...account, ...updated } : account));
-}
-
-function resolveBackendAccountId(value: string, accounts: Account[]) {
-  const normalized = value.trim();
-  const byId = accounts.find((account) => account.id === normalized);
-  if (byId) return byId.id;
-
-  const byNumber = accounts.find((account) => account.number === normalized);
-  if (byNumber) return byNumber.id;
-
-  const digits = normalized.replace(/\D/g, '');
-  const byGeneratedNumber = accounts.find((account) => account.number.replace(/\D/g, '') === digits);
-  if (byGeneratedNumber) return byGeneratedNumber.id;
-
-  const compactId = digits.replace(/^0+/, '');
-  const byShortId = accounts.find((account) => account.id === compactId);
-  if (byShortId) return byShortId.id;
-
-  return compactId || normalized;
-}
-
-function isNumericAccountId(value: string) {
-  return /^\d+$/.test(value.trim());
-}
-
-function isValidExternalAccountNumber(value: string) {
-  return /^\d{10,30}$/.test(value.replace(/\D/g, ''));
-}
-
 export function useBankingState() {
-  const [state, setState] = useState<BankingState>(readInitialState);
+  const [state, setState] = useState<BankingState>(() => readBankingState());
   const [auth, setAuth] = useState<AuthViewState>({ status: 'checking', email: null, error: null });
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   useEffect(() => {
     if (auth.status === 'authenticated' && auth.email) {
-      localStorage.setItem(storageKeyForEmail(auth.email), JSON.stringify(state));
+      saveBankingState(auth.email, state);
     }
 
     document.documentElement.dataset.theme = state.profile.theme;
@@ -196,29 +122,71 @@ export function useBankingState() {
     }
   }
 
-  async function bootstrapFromBackend() {
-    setAuth({ status: 'checking', email: null, error: null });
-
-    try {
-      const session = await coreApi.getAuthState();
-      if (!session.authenticated) {
-        setAuth({ status: 'guest', email: null, error: null });
-        return;
-      }
-
-      const sessionEmail = session.email;
-      setState(readInitialState(sessionEmail));
-      setAuth({ status: 'authenticated', email: sessionEmail, error: null });
-      await loadBackendData(true, sessionEmail);
-    } catch {
-      setAuth({ status: 'guest', email: null, error: null });
-    }
-  }
-
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void bootstrapFromBackend();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let cancelled = false;
+
+    async function run() {
+      try {
+        const session = await coreApi.getAuthState();
+        if (cancelled) return;
+
+        if (!session.authenticated) {
+          setAuth({ status: 'guest', email: null, error: null });
+          return;
+        }
+
+        const sessionEmail = session.email;
+        setState(readBankingState(sessionEmail));
+        setAuth({ status: 'authenticated', email: sessionEmail, error: null });
+
+        const profile = await coreApi.getProfile();
+        if (cancelled) return;
+
+        const profileEmail = profile.email ?? sessionEmail;
+        setState((current) => ({
+          ...current,
+          profile: {
+            ...current.profile,
+            ...profile,
+            email: profileEmail ?? current.profile.email,
+            fullName: getDisplayNameByEmail(profileEmail, current.profile.fullName),
+          },
+        }));
+
+        const rates = await currencyApi.getRates().catch(() => []);
+        if (cancelled) return;
+        setState((current) => ({ ...current, rates }));
+
+        const accounts = await coreApi.getAccounts();
+        if (cancelled) return;
+        setState((current) => ({ ...current, accounts }));
+
+        const histories = await Promise.all(
+          accounts
+            .filter((account) => account.status === 'active')
+            .map((account) => coreApi.getHistory(account).catch(() => [] as Transaction[])),
+        );
+        if (cancelled) return;
+
+        setState((current) => ({
+          ...current,
+          transactions: uniqueTransactions([
+            ...histories.flat(),
+            ...current.transactions.filter((transaction) => transaction.status === 'pending'),
+          ]),
+        }));
+      } catch {
+        if (!cancelled) {
+          setAuth({ status: 'guest', email: null, error: null });
+        }
+      }
+    }
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function login(email: string, password: string) {
@@ -228,7 +196,7 @@ export function useBankingState() {
       await coreApi.login(email, password);
       const session = await coreApi.getAuthState();
       const sessionEmail = session.email ?? email;
-      setState(readInitialState(sessionEmail));
+      setState(readBankingState(sessionEmail));
       setAuth({ status: 'authenticated', email: sessionEmail, error: null });
       await loadBackendData(true, sessionEmail);
       notify('success', 'Вы вошли в личный кабинет');
@@ -249,7 +217,7 @@ export function useBankingState() {
       await coreApi.login(email, password);
       const session = await coreApi.getAuthState();
       const sessionEmail = session.email ?? email;
-      setState(readInitialState(sessionEmail));
+      setState(readBankingState(sessionEmail));
       setAuth({ status: 'authenticated', email: sessionEmail, error: null });
       await loadBackendData(true, sessionEmail);
       notify('success', 'Аккаунт создан');
@@ -265,8 +233,8 @@ export function useBankingState() {
   async function logout() {
     try {
       await coreApi.logout();
-    } catch {
-      // UI session should be cleared even if backend session has already expired.
+    } catch (error) {
+      void error;
     }
 
     setAuth({ status: 'guest', email: null, error: null });
