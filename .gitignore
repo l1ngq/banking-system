@@ -16,3 +16,4 @@ dist
 terraform.tfvars
 Vagrantfile
 kubeconfig
+pub-cert.pem
