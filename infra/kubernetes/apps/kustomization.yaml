@@ -6,7 +6,7 @@ resources:
   - currencies-service
 images:
   - name: ghcr.io/l1ngq/banking-frontend
-    newTag: web-v1.0.6
+    newTag: web-v1.0.7
   - name: ghcr.io/l1ngq/banking-core
     newTag: core-v1.0.1
   - name: ghcr.io/l1ngq/banking-currencies
