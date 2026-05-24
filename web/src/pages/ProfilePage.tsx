@@ -19,6 +19,7 @@ function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
   const [phone, setPhone] = useState(profile.phone);
   const [city, setCity] = useState(profile.city);
 
+
   return (
     <div className="form form--page">
       <label>
@@ -40,6 +41,7 @@ function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
 
 function ProfilePage({ profile, goals, cashbackCategories, onUpdate }: ProfilePageProps) {
   const profileFormKey = `${profile.email}-${profile.fullName}-${profile.phone}-${profile.city}`;
+
 
   return (
     <div className="page-grid">
