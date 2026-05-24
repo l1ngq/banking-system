@@ -1,6 +1,6 @@
 export const API_URLS = {
-  core: import.meta.env.VITE_CORE_API_URL ?? '/core-api',
-  currencies: import.meta.env.VITE_CURRENCIES_API_URL ?? '/currencies-api',
+  core: import.meta.env.VITE_CORE_API_URL ?? '/api',
+  currencies: import.meta.env.VITE_CURRENCIES_API_URL ?? '/api/currencies',
   info: import.meta.env.VITE_INFO_API_URL ?? '',
   assistant: import.meta.env.VITE_ASSISTANT_API_URL ?? '',
 };
