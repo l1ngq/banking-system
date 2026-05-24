@@ -16,6 +16,13 @@ spec:
           enabled: true
           existingSecret: redis-secret
         master:
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "400m"
+              memory: "512Mi"
           persistence:
             size: 1Gi
   destination:

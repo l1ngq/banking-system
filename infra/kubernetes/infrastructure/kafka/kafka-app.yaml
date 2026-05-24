@@ -13,13 +13,22 @@ spec:
     helm:
       values: |
         replicaCount: 3
+        listeners:
+          client:
+            protocol: PLAINTEXT
+          controller:
+            protocol: PLAINTEXT
+          interbroker:
+            protocol: PLAINTEXT
         persistence:
           enabled: true
           size: 2Gi
         resources:
           requests:
+            cpu: "200m"
             memory: "512Mi"
           limits:
+            cpu: "700m"
             memory: "1024Mi"
   destination:
     server: "https://kubernetes.default.svc"

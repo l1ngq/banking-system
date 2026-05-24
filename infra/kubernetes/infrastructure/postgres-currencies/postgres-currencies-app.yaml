@@ -15,6 +15,13 @@ spec:
           existingSecret: postgres-currencies-secret
           database: "currencies_db"
         primary:
+          resources:
+            requests:
+              cpu: "150m"
+              memory: "512Mi"
+            limits:
+              cpu: "700m"
+              memory: "1024Mi"
           persistence:
             size: 2Gi
   destination:
