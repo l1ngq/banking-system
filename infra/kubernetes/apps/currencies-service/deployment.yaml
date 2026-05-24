@@ -43,7 +43,7 @@ spec:
           readinessProbe:
             tcpSocket:
               port: 8081
-            initialDelaySeconds: 10
+            initialDelaySeconds: 45
             periodSeconds: 10
             timeoutSeconds: 2
           livenessProbe:
