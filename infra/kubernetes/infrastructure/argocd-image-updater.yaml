@@ -11,19 +11,23 @@ spec:
       writeBackTarget: kustomization
   applicationRefs:
     - namePattern: banking-apps
+      useAnnotations: false
       images:
         - alias: frontend
           imageName: ghcr.io/l1ngq/banking-frontend
           commonUpdateSettings:
             updateStrategy: newest-build
             allowTags: regexp:^web-v[0-9]+\.[0-9]+\.[0-9]+$
+            forceUpdate: false
         - alias: core
           imageName: ghcr.io/l1ngq/banking-core
           commonUpdateSettings:
             updateStrategy: newest-build
             allowTags: regexp:^core-v[0-9]+\.[0-9]+\.[0-9]+$
+            forceUpdate: false
         - alias: currencies
           imageName: ghcr.io/l1ngq/banking-currencies
           commonUpdateSettings:
             updateStrategy: newest-build
             allowTags: regexp:^currencies-v[0-9]+\.[0-9]+\.[0-9]+$
+            forceUpdate: false
