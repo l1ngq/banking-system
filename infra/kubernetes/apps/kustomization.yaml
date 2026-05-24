@@ -8,6 +8,6 @@ images:
   - name: ghcr.io/l1ngq/banking-frontend
     newTag: web-v1.0.6
   - name: ghcr.io/l1ngq/banking-core
-    newTag: core-v1.0.0
+    newTag: core-v1.0.1
   - name: ghcr.io/l1ngq/banking-currencies
     newTag: currencies-v1.0.0
