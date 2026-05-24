@@ -9,8 +9,7 @@ spec:
     repoURL: "https://github.com/l1ngq/banking-system.git"
     targetRevision: main
     path: infra/kubernetes/apps
-    directory:
-      recurse: true
+    kustomize: {}
   destination:
     server: "https://kubernetes.default.svc"
     namespace: banking-system
