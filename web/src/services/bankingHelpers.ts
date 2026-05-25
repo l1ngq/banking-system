@@ -42,5 +42,5 @@ export function isNumericAccountId(value: string) {
 }
 
 export function isValidExternalAccountNumber(value: string) {
-  return /^\d{10,30}$/.test(value.replace(/\D/g, ''));
+  return /^\d{20}$/.test(value.replace(/\s/g, ''));
 }
