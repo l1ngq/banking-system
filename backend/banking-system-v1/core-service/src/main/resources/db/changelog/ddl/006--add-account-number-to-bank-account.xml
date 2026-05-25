@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="006--add-account-number-to-bank-account" author="student">
+        <addColumn tableName="bank_account" schemaName="${APP_DATABASE_SCHEMA}">
+            <column name="account_number" type="varchar(20)"/>
+        </addColumn>
+
+        <sql>
+            UPDATE ${APP_DATABASE_SCHEMA}.bank_account
+            SET account_number = '40817' || right(lpad(id::text, 15, '0'), 15)
+            WHERE account_number IS NULL
+        </sql>
+
+        <addNotNullConstraint tableName="bank_account"
+                              schemaName="${APP_DATABASE_SCHEMA}"
+                              columnName="account_number"
+                              columnDataType="varchar(20)"/>
+
+        <addUniqueConstraint tableName="bank_account"
+                             schemaName="${APP_DATABASE_SCHEMA}"
+                             columnNames="account_number"
+                             constraintName="uk_bank_account_account_number"/>
+    </changeSet>
+
+</databaseChangeLog>
