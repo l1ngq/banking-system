@@ -21,11 +21,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AccountServiceIntegrationTest extends BasePostgresIntegrationTest {
+
+    private static final AtomicLong ACCOUNT_NUMBER_SEQUENCE = new AtomicLong(1000);
 
     @Autowired
     private AccountService accountService;
@@ -42,6 +45,7 @@ class AccountServiceIntegrationTest extends BasePostgresIntegrationTest {
         AccountDto result = accountService.createAccount(request, user.getId()).getData();
 
         assertThat(result.getId()).isNotNull();
+        assertThat(result.getAccountNumber()).startsWith("40817").hasSize(20);
         assertThat(result.getUserId()).isEqualTo(user.getId());
         assertThat(bankAccountRepository.findAllByUserId(user.getId())).hasSize(1);
     }
@@ -159,11 +163,16 @@ class AccountServiceIntegrationTest extends BasePostgresIntegrationTest {
 
     private BankAccountEntity account(UUID userId, BigDecimal balance) {
         return BankAccountEntity.builder()
+                .accountNumber(nextAccountNumber())
                 .userId(userId)
                 .currency(Currency.USD)
                 .balance(balance)
                 .type(AccountType.CHECKING)
                 .status(AccountStatus.ACTIVE)
                 .build();
+    }
+
+    private String nextAccountNumber() {
+        return "40817" + String.format("%015d", ACCOUNT_NUMBER_SEQUENCE.getAndIncrement());
     }
 }

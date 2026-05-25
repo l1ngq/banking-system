@@ -16,10 +16,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class CoreRepositoryIntegrationTest extends BasePostgresIntegrationTest {
+
+    private static final AtomicLong ACCOUNT_NUMBER_SEQUENCE = new AtomicLong(2000);
 
     @Test
     @DisplayName("Spring context загружается с PostgreSQL и Liquibase")
@@ -56,6 +59,10 @@ class CoreRepositoryIntegrationTest extends BasePostgresIntegrationTest {
         assertThat(bankAccountRepository.findAllByUserId(user.getId()))
                 .extracting(BankAccountEntity::getId)
                 .containsExactly(saved.getId());
+        assertThat(bankAccountRepository.findByAccountNumber(saved.getAccountNumber()))
+                .get()
+                .extracting(BankAccountEntity::getId)
+                .isEqualTo(saved.getId());
     }
 
     @Test
@@ -101,12 +108,17 @@ class CoreRepositoryIntegrationTest extends BasePostgresIntegrationTest {
 
     private BankAccountEntity bankAccount(UUID userId, BigDecimal balance) {
         return BankAccountEntity.builder()
+                .accountNumber(nextAccountNumber())
                 .userId(userId)
                 .currency(Currency.USD)
                 .balance(balance)
                 .type(AccountType.CHECKING)
                 .status(AccountStatus.ACTIVE)
                 .build();
+    }
+
+    private String nextAccountNumber() {
+        return "40817" + String.format("%015d", ACCOUNT_NUMBER_SEQUENCE.getAndIncrement());
     }
 
     private TransactionEntity transaction(Long fromAccountId, Long toAccountId, BigDecimal amount) {
