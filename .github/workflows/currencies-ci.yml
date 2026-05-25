@@ -28,4 +28,4 @@ jobs:
 
       - name: Build and Test
         working-directory: ./backend/banking-system-v1
-        run: ./mvnw -B -pl core-service -am verify
+        run: ./mvnw -B -pl currencies-service -am verify
