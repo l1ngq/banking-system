@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { getDisplayNameByEmail } from '../api/config';
-import { coreApi, makeDisplayAccountNumber } from '../api/coreApi';
+import { coreApi } from '../api/coreApi';
 import { currencyApi } from '../api/currencyApi';
 import { createBankingStateForEmail } from '../data/mockData';
 import type { Action, Account, BankingState, CurrencyCode, Theme, Transaction } from '../types/banking';
 import { getTotalBalance } from '../utils/calculations';
 import {
-  isNumericAccountId,
   isSupportedBackendCurrency,
   isValidExternalAccountNumber,
   replaceAccount,
-  resolveBackendAccountId,
   uniqueTransactions,
 } from '../services/bankingHelpers';
 import { readBankingState, saveBankingState } from '../services/bankingStorage';
@@ -337,54 +335,45 @@ export function useBankingState() {
         return;
       }
 
-      if (payload.transferMode === 'external') {
-        const recipientNumber = payload.toAccountNumber.replace(/\D/g, '');
-        if (!isValidExternalAccountNumber(recipientNumber)) {
-          notify('error', 'Введите корректный номер счёта получателя');
-          return;
-        }
-
-        const draftTransaction: Transaction = {
-          id: `external-draft-${crypto.randomUUID()}`,
-          title: `Черновик перевода на счёт •${recipientNumber.slice(-4)}`,
-          category: 'Перевод по номеру счёта',
-          amount: -payload.amount,
-          currency: account.currency,
-          createdAt: new Date().toISOString(),
-          status: 'pending',
-          accountId: account.id,
-          type: 'transfer',
-        };
-
-        setState((current) => ({
-          ...current,
-          transactions: uniqueTransactions([draftTransaction, ...current.transactions]),
-        }));
-        notify('info', 'Черновик перевода создан', 'Фактическая отправка будет доступна после реализации этой функции в backend');
-        return;
-      }
-
       if (account.balance < payload.amount) {
         notify('error', 'Недостаточно средств', 'Сначала пополните выбранный счёт');
         return;
       }
 
-      const toAccountId = resolveBackendAccountId(payload.toAccountNumber, accounts);
-      if (!isNumericAccountId(toAccountId)) {
-        notify('error', 'Счёт получателя не найден');
+      const rawRecipientNumber = payload.toAccountNumber.trim();
+      let recipientAccountNumber = rawRecipientNumber.replace(/\s/g, '');
+
+      if (payload.transferMode !== 'external') {
+        const recipientAccount = accounts.find((item) => {
+          const compactNumber = item.number.replace(/\s/g, '');
+          return item.id === rawRecipientNumber
+            || item.number === rawRecipientNumber
+            || compactNumber === recipientAccountNumber;
+        });
+
+        if (!recipientAccount) {
+          notify('error', 'Счёт получателя не найден');
+          return;
+        }
+
+        recipientAccountNumber = recipientAccount.number.replace(/\s/g, '');
+      }
+
+      if (!isValidExternalAccountNumber(recipientAccountNumber)) {
+        notify('error', 'Введите корректный номер счёта получателя');
         return;
       }
 
       await coreApi.transfer({
         fromAccountId: account.id,
-        toAccountId,
+        toAccountNumber: recipientAccountNumber,
         amount: payload.amount,
         currency: account.currency,
       });
 
       const freshAccounts = await refreshAccounts();
       await refreshHistory(freshAccounts);
-      notify('success', 'Перевод отправлен', `Получатель: ${makeDisplayAccountNumber(toAccountId)}`);
+      notify('success', 'Перевод отправлен', `Получатель: ${recipientAccountNumber}`);
     } catch (error) {
       notify('error', 'Перевод не выполнен', error instanceof Error ? error.message : undefined);
     }
@@ -466,7 +455,7 @@ export function useBankingState() {
 
       await coreApi.transfer({
         fromAccountId: account.id,
-        toAccountId: targetAccount.id,
+        toAccountNumber: targetAccount.number,
         amount: payload.amount,
         currency: account.currency,
       });

@@ -32,12 +32,12 @@ function createInitialPayload(accounts: Account[]) {
   const activeAccounts = accounts.filter((account) => account.status === 'active');
   const preferredAccount = getPreferredAccount(activeAccounts);
   const firstAccountId = preferredAccount?.id ?? activeAccounts[0]?.id ?? accounts[0]?.id ?? '';
-  const secondAccountId = activeAccounts.find((account) => account.id !== firstAccountId)?.id ?? '';
+  const secondAccountNumber = activeAccounts.find((account) => account.id !== firstAccountId)?.number ?? '';
 
   return {
     accountId: firstAccountId,
     transferMode: 'own',
-    toAccountNumber: secondAccountId,
+    toAccountNumber: secondAccountNumber,
     currency: 'RUB',
     type: 'debit',
     toCurrency: preferredAccount?.currency === 'USD' ? 'RUB' : 'USD',
@@ -62,13 +62,13 @@ function ActionModalForm({ action, accounts, onClose, onSubmit }: ActionModalFor
       const next = { ...current, [key]: value };
 
       if (key === 'accountId' && action === 'transfer' && next.transferMode !== 'external') {
-        next.toAccountNumber = activeAccounts.find((account) => account.id !== value)?.id ?? '';
+        next.toAccountNumber = activeAccounts.find((account) => account.id !== value)?.number ?? '';
       }
 
       if (key === 'transferMode') {
         next.toAccountNumber = value === 'external'
           ? ''
-          : activeAccounts.find((account) => account.id !== next.accountId)?.id ?? '';
+          : activeAccounts.find((account) => account.id !== next.accountId)?.number ?? '';
       }
 
       if (key === 'accountId' && action === 'exchange') {
@@ -163,14 +163,13 @@ function ActionModalForm({ action, accounts, onClose, onSubmit }: ActionModalFor
                   Номер счёта получателя
                   <input value={payload.toAccountNumber ?? ''} onChange={(event) => update('toAccountNumber', event.target.value)} placeholder="Например, 40817810000000000000" disabled={submitting} />
                 </label>
-                <p className="form__hint">Это черновик перевода: заявка появится в истории, а фактическое списание будет доступно после реализации на стороне банка.</p>
               </>
             ) : destinationAccounts.length > 0 ? (
               <label>
                 Счёт получателя
                 <select value={payload.toAccountNumber ?? ''} onChange={(event) => update('toAccountNumber', event.target.value)} disabled={submitting}>
                   {destinationAccounts.map((account) => (
-                    <option key={account.id} value={account.id}>
+                    <option key={account.id} value={account.number}>
                       {account.name} · {account.number.slice(-4)} · {account.currency}
                     </option>
                   ))}
