@@ -2,7 +2,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: monitoring
 
-# Создаем 5 маленьких независимых ConfigMap'ов
 configMapGenerator:
   - name: dashboard-traefik
     files:
