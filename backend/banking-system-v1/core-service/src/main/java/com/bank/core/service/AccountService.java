@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -37,11 +38,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AccountService {
 
+    private static final String ACCOUNT_NUMBER_PREFIX = "40817";
+    private static final int ACCOUNT_NUMBER_RANDOM_DIGITS = 15;
+
     private final BankAccountRepository bankAccountRepository;
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
     private final AccountMapper accountMapper;
     private final TransactionEventProducer transactionEventProducer;
+    private final SecureRandom accountNumberRandom = new SecureRandom();
 
     public UniversalResponse<AccountListDto> getMyAccounts(UUID userId) {
         log.info("Request to get accounts for userId: {}", userId);
@@ -58,6 +63,7 @@ public class AccountService {
                 .orElseThrow(() -> new NotFoundException("User not found by id: " + userId));
 
         BankAccountEntity entity = BankAccountEntity.builder()
+                .accountNumber(generateAccountNumber())
                 .userId(user.getId())
                 .currency(request.getCurrency())
                 .type(request.getType())
@@ -138,6 +144,22 @@ public class AccountService {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new ConflictException("Amount must be greater than zero");
         }
+    }
+
+    private String generateAccountNumber() {
+        String accountNumber;
+        do {
+            accountNumber = ACCOUNT_NUMBER_PREFIX + randomDigits(ACCOUNT_NUMBER_RANDOM_DIGITS);
+        } while (bankAccountRepository.existsByAccountNumber(accountNumber));
+        return accountNumber;
+    }
+
+    private String randomDigits(int length) {
+        StringBuilder digits = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            digits.append(accountNumberRandom.nextInt(10));
+        }
+        return digits.toString();
     }
 
     private BankAccountEntity getOwnedActiveAccountForUpdate(Long accountId, UUID currentUserId) {
