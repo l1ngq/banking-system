@@ -20,6 +20,10 @@ public interface BankAccountRepository extends JpaRepository<BankAccountEntity, 
 
     List<BankAccountEntity> findAllByUserId(UUID userId);
 
+    Optional<BankAccountEntity> findByAccountNumber(String accountNumber);
+
+    boolean existsByAccountNumber(String accountNumber);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM BankAccountEntity a WHERE a.id = :id")
     Optional<BankAccountEntity> findByIdForUpdate(@Param("id") Long id);
