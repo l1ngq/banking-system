@@ -4,7 +4,7 @@ kind: Kustomization
 resources:
   - argocd-image-updater.yaml
   - kafka/kafka-app.yaml
-  - monitoring/kustomization.yaml
+  - monitoring
   - postgres-core/postgres-core-app.yaml
   - postgres-currencies/postgres-currencies-app.yaml
   - redis/redis-app.yaml
