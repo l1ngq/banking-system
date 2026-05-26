@@ -15,11 +15,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class TransferServiceIntegrationTest extends BasePostgresIntegrationTest {
+
+    private static final AtomicLong ACCOUNT_NUMBER_SEQUENCE = new AtomicLong(1);
 
     @Autowired
     private TransferService transferService;
@@ -31,7 +34,7 @@ class TransferServiceIntegrationTest extends BasePostgresIntegrationTest {
         BankAccountEntity fromAccount = bankAccountRepository.saveAndFlush(account(user.getId(), new BigDecimal("100.00")));
         BankAccountEntity toAccount = bankAccountRepository.saveAndFlush(account(UUID.randomUUID(), new BigDecimal("20.00")));
 
-        transferService.transfer(new TransferRequest(fromAccount.getId(), toAccount.getId(), new BigDecimal("30.00"), Currency.USD), user.getId());
+        transferService.transfer(new TransferRequest(fromAccount.getId(), toAccount.getAccountNumber(), new BigDecimal("30.00"), Currency.USD), user.getId());
 
         assertThat(bankAccountRepository.findById(fromAccount.getId())).get()
                 .extracting(BankAccountEntity::getBalance)
@@ -48,7 +51,7 @@ class TransferServiceIntegrationTest extends BasePostgresIntegrationTest {
         BankAccountEntity fromAccount = bankAccountRepository.saveAndFlush(account(user.getId(), new BigDecimal("100.00")));
         BankAccountEntity toAccount = bankAccountRepository.saveAndFlush(account(UUID.randomUUID(), BigDecimal.ZERO));
 
-        transferService.transfer(new TransferRequest(fromAccount.getId(), toAccount.getId(), new BigDecimal("25.00"), Currency.USD), user.getId());
+        transferService.transfer(new TransferRequest(fromAccount.getId(), toAccount.getAccountNumber(), new BigDecimal("25.00"), Currency.USD), user.getId());
 
         assertThat(transactionRepository.findAll())
                 .hasSize(1)
@@ -63,7 +66,7 @@ class TransferServiceIntegrationTest extends BasePostgresIntegrationTest {
         UserEntity user = userRepository.saveAndFlush(user("transfer3@example.com"));
         BankAccountEntity fromAccount = bankAccountRepository.saveAndFlush(account(user.getId(), new BigDecimal("100.00")));
         BankAccountEntity toAccount = bankAccountRepository.saveAndFlush(account(UUID.randomUUID(), BigDecimal.ZERO));
-        transferService.transfer(new TransferRequest(fromAccount.getId(), toAccount.getId(), new BigDecimal("10.00"), Currency.USD), user.getId());
+        transferService.transfer(new TransferRequest(fromAccount.getId(), toAccount.getAccountNumber(), new BigDecimal("10.00"), Currency.USD), user.getId());
 
         var response = transferService.getHistory(fromAccount.getId(), user.getId());
 
@@ -93,11 +96,16 @@ class TransferServiceIntegrationTest extends BasePostgresIntegrationTest {
 
     private BankAccountEntity account(UUID userId, BigDecimal balance) {
         return BankAccountEntity.builder()
+                .accountNumber(nextAccountNumber())
                 .userId(userId)
                 .currency(Currency.USD)
                 .balance(balance)
                 .type(AccountType.CHECKING)
                 .status(AccountStatus.ACTIVE)
                 .build();
+    }
+
+    private String nextAccountNumber() {
+        return "40817" + String.format("%015d", ACCOUNT_NUMBER_SEQUENCE.getAndIncrement());
     }
 }

@@ -103,6 +103,7 @@ class AccountServiceUnitTest {
         assertThat(captor.getValue().getType()).isEqualTo(AccountType.CHECKING);
         assertThat(captor.getValue().getBalance()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(captor.getValue().getStatus()).isEqualTo(AccountStatus.ACTIVE);
+        assertThat(captor.getValue().getAccountNumber()).startsWith("40817").hasSize(20);
     }
 
     @Test
@@ -375,6 +376,7 @@ class AccountServiceUnitTest {
     private BankAccountEntity account(Long id, UUID userId, BigDecimal balance, AccountStatus status) {
         return BankAccountEntity.builder()
                 .id(id)
+                .accountNumber(accountNumber(id))
                 .userId(userId)
                 .currency(Currency.USD)
                 .balance(balance)
@@ -390,6 +392,7 @@ class AccountServiceUnitTest {
     private AccountDto accountDto(Long id, UUID userId, BigDecimal balance) {
         return new AccountDto(
                 id,
+                accountNumber(id),
                 userId,
                 Currency.USD,
                 balance,
@@ -398,5 +401,9 @@ class AccountServiceUnitTest {
                 null,
                 null
         );
+    }
+
+    private String accountNumber(Long id) {
+        return "40817" + String.format("%015d", id);
     }
 }

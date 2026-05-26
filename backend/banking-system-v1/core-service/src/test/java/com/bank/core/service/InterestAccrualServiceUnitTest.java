@@ -163,6 +163,7 @@ class InterestAccrualServiceUnitTest {
     private BankAccountEntity account(AccountType type, AccountStatus status, BigDecimal balance, LocalDate lastInterestAccruedDate) {
         return BankAccountEntity.builder()
                 .id(1L)
+                .accountNumber("40817000000000000001")
                 .userId(UUID.randomUUID())
                 .currency(Currency.USD)
                 .balance(balance)

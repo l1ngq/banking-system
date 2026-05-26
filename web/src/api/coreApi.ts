@@ -16,6 +16,7 @@ type AuthState = {
 
 type BackendAccount = {
   id: number;
+  accountNumber?: string;
   userId?: string;
   currency: BackendCurrency;
   balance: number | string;
@@ -44,7 +45,7 @@ export type BackendTransaction = {
 
 export type TransferPayload = {
   fromAccountId: string;
-  toAccountId: string;
+  toAccountNumber: string;
   amount: number;
   currency: CurrencyCode;
 };
@@ -109,7 +110,7 @@ export function mapAccount(account: BackendAccount): Account {
   return {
     id: String(account.id),
     name: `${currency} ${type === 'saving' ? 'накопительный' : 'текущий'} счёт`,
-    number: makeDisplayAccountNumber(account.id),
+    number: account.accountNumber ?? makeDisplayAccountNumber(account.id),
     balance: Number(account.balance ?? 0),
     currency,
     type,
@@ -268,7 +269,7 @@ export const coreApi = {
       method: 'POST',
       body: JSON.stringify({
         fromAccountId: Number(payload.fromAccountId),
-        toAccountId: Number(payload.toAccountId),
+        toAccountNumber: payload.toAccountNumber.replace(/\s/g, ''),
         amount: payload.amount,
         currency: toBackendCurrency(payload.currency),
       }),

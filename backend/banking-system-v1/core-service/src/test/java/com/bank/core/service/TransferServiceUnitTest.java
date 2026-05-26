@@ -66,24 +66,27 @@ class TransferServiceUnitTest {
     @DisplayName("Перевод на тот же самый счёт запрещён")
     void transferToSameAccountThrowsConflict() {
         UUID userId = UUID.randomUUID();
+        BankAccountEntity account = account(1L, userId, new BigDecimal("1000.00"));
+        mockRecipientLookup(account);
 
         // when / then
         assertThatThrownBy(() -> transferService.transfer(
-                new TransferRequest(1L, 1L, new BigDecimal("100.00"), Currency.USD), userId))
+                transferRequest(1L, 1L, new BigDecimal("100.00"), Currency.USD), userId))
                 .isInstanceOf(ConflictException.class);
     }
 
     @Test
-    void transferSameCurrencyChangesBalancesAndSavesTransaction() {
+    void transferBetweenOwnAccountsByAccountNumberChangesBalancesAndSavesTransaction() {
         UUID userId = UUID.randomUUID();
         BankAccountEntity fromAccount = account(1L, userId, new BigDecimal("1000.00"));
-        BankAccountEntity toAccount = account(2L, UUID.randomUUID(), BigDecimal.ZERO);
+        BankAccountEntity toAccount = account(2L, userId, BigDecimal.ZERO);
+        mockRecipientLookup(toAccount);
         when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
         when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
         when(transactionRepository.save(any(TransactionEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        transferService.transfer(new TransferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId);
+        transferService.transfer(transferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId);
 
         assertThat(fromAccount.getBalance()).isEqualByComparingTo("900.00");
         assertThat(toAccount.getBalance()).isEqualByComparingTo("100.00");
@@ -95,14 +98,33 @@ class TransferServiceUnitTest {
     }
 
     @Test
+    void transferToAnotherUserByAccountNumberChangesBalances() {
+        UUID userId = UUID.randomUUID();
+        BankAccountEntity fromAccount = account(1L, userId, new BigDecimal("1000.00"));
+        BankAccountEntity toAccount = account(2L, UUID.randomUUID(), BigDecimal.ZERO);
+        mockRecipientLookup(toAccount);
+        when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
+        when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
+        when(transactionRepository.save(any(TransactionEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        transferService.transfer(transferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId);
+
+        assertThat(fromAccount.getBalance()).isEqualByComparingTo("900.00");
+        assertThat(toAccount.getBalance()).isEqualByComparingTo("100.00");
+    }
+
+    @Test
     @DisplayName("Если счёт отправителя не найден, выбрасывается NotFoundException")
     void transferThrowsNotFoundWhenSenderAccountMissing() {
         UUID userId = UUID.randomUUID();
+        BankAccountEntity toAccount = account(2L, UUID.randomUUID(), BigDecimal.ZERO);
+        mockRecipientLookup(toAccount);
         when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.empty());
 
         // when / then
         assertThatThrownBy(() -> transferService.transfer(
-                new TransferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
+                transferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
                 .isInstanceOf(NotFoundException.class);
         verify(transactionRepository, never()).save(any());
     }
@@ -111,13 +133,11 @@ class TransferServiceUnitTest {
     @DisplayName("Если счёт получателя не найден, выбрасывается NotFoundException")
     void transferThrowsNotFoundWhenRecipientAccountMissing() {
         UUID userId = UUID.randomUUID();
-        BankAccountEntity fromAccount = account(1L, userId, new BigDecimal("1000.00"));
-        when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
-        when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.empty());
+        when(bankAccountRepository.findByAccountNumber(accountNumber(2L))).thenReturn(Optional.empty());
 
         // when / then
         assertThatThrownBy(() -> transferService.transfer(
-                new TransferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
+                transferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
                 .isInstanceOf(NotFoundException.class);
         verify(transactionRepository, never()).save(any());
     }
@@ -128,12 +148,13 @@ class TransferServiceUnitTest {
         UUID userId = UUID.randomUUID();
         BankAccountEntity fromAccount = account(1L, userId, new BigDecimal("1000.00"), Currency.USD, AccountStatus.CLOSED);
         BankAccountEntity toAccount = account(2L, UUID.randomUUID(), BigDecimal.ZERO);
+        mockRecipientLookup(toAccount);
         when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
         when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
 
         // when / then
         assertThatThrownBy(() -> transferService.transfer(
-                new TransferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
+                transferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
                 .isInstanceOf(ConflictException.class);
         verify(transactionRepository, never()).save(any());
     }
@@ -144,12 +165,13 @@ class TransferServiceUnitTest {
         UUID userId = UUID.randomUUID();
         BankAccountEntity fromAccount = account(1L, userId, new BigDecimal("1000.00"));
         BankAccountEntity toAccount = account(2L, UUID.randomUUID(), BigDecimal.ZERO, Currency.USD, AccountStatus.CLOSED);
+        mockRecipientLookup(toAccount);
         when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
         when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
 
         // when / then
         assertThatThrownBy(() -> transferService.transfer(
-                new TransferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
+                transferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
                 .isInstanceOf(ConflictException.class);
         verify(transactionRepository, never()).save(any());
     }
@@ -159,11 +181,12 @@ class TransferServiceUnitTest {
         UUID userId = UUID.randomUUID();
         BankAccountEntity fromAccount = account(1L, userId, new BigDecimal("50.00"));
         BankAccountEntity toAccount = account(2L, UUID.randomUUID(), BigDecimal.ZERO);
+        mockRecipientLookup(toAccount);
         when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
         when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
 
         assertThatThrownBy(() -> transferService.transfer(
-                new TransferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
+                transferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
                 .isInstanceOf(InsufficientFundsException.class);
     }
 
@@ -173,12 +196,13 @@ class TransferServiceUnitTest {
         UUID userId = UUID.randomUUID();
         BankAccountEntity fromAccount = account(1L, userId, new BigDecimal("50.00"));
         BankAccountEntity toAccount = account(2L, UUID.randomUUID(), BigDecimal.ZERO);
+        mockRecipientLookup(toAccount);
         when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
         when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
 
         // when
         assertThatThrownBy(() -> transferService.transfer(
-                new TransferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
+                transferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
                 .isInstanceOf(InsufficientFundsException.class);
 
         // then
@@ -190,11 +214,12 @@ class TransferServiceUnitTest {
         UUID currentUserId = UUID.randomUUID();
         BankAccountEntity fromAccount = account(1L, UUID.randomUUID(), new BigDecimal("1000.00"));
         BankAccountEntity toAccount = account(2L, UUID.randomUUID(), BigDecimal.ZERO);
+        mockRecipientLookup(toAccount);
         when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
         when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
 
         assertThatThrownBy(() -> transferService.transfer(
-                new TransferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), currentUserId))
+                transferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), currentUserId))
                 .isInstanceOf(ConflictException.class);
     }
 
@@ -204,6 +229,7 @@ class TransferServiceUnitTest {
         UUID userId = UUID.randomUUID();
         BankAccountEntity fromAccount = account(1L, userId, new BigDecimal("1000.00"), Currency.USD, AccountStatus.ACTIVE);
         BankAccountEntity toAccount = account(2L, UUID.randomUUID(), BigDecimal.ZERO, Currency.RUB, AccountStatus.ACTIVE);
+        mockRecipientLookup(toAccount);
         when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
         when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
         when(currenciesClient.convert(eq("USD"), eq("RUB"), eq(new BigDecimal("100.00"))))
@@ -211,7 +237,7 @@ class TransferServiceUnitTest {
 
         // when / then
         assertThatThrownBy(() -> transferService.transfer(
-                new TransferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
+                transferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
                 .isInstanceOf(CurrencyServiceUnavailableException.class);
     }
 
@@ -221,6 +247,7 @@ class TransferServiceUnitTest {
         UUID userId = UUID.randomUUID();
         BankAccountEntity fromAccount = account(1L, userId, new BigDecimal("1000.00"), Currency.USD, AccountStatus.ACTIVE);
         BankAccountEntity toAccount = account(2L, UUID.randomUUID(), new BigDecimal("500.00"), Currency.RUB, AccountStatus.ACTIVE);
+        mockRecipientLookup(toAccount);
         when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
         when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
         when(currenciesClient.convert(eq("USD"), eq("RUB"), eq(new BigDecimal("100.00"))))
@@ -228,7 +255,7 @@ class TransferServiceUnitTest {
 
         // when
         assertThatThrownBy(() -> transferService.transfer(
-                new TransferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
+                transferRequest(1L, 2L, new BigDecimal("100.00"), Currency.USD), userId))
                 .isInstanceOf(CurrencyServiceUnavailableException.class);
 
         // then
@@ -243,6 +270,7 @@ class TransferServiceUnitTest {
         UUID userId = UUID.randomUUID();
         BankAccountEntity fromAccount = account(1L, userId, new BigDecimal("1000.00"), Currency.USD, AccountStatus.ACTIVE);
         BankAccountEntity toAccount = account(2L, UUID.randomUUID(), new BigDecimal("500.00"), Currency.RUB, AccountStatus.ACTIVE);
+        mockRecipientLookup(toAccount);
         when(bankAccountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
         when(bankAccountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
         when(transactionRepository.save(any(TransactionEntity.class)))
@@ -252,7 +280,7 @@ class TransferServiceUnitTest {
                         new ConversionResult("USD", "RUB", new BigDecimal("10.00"), new BigDecimal("900.00"), new BigDecimal("90.00"), null)));
 
         // when
-        transferService.transfer(new TransferRequest(1L, 2L, new BigDecimal("10.00"), Currency.USD), userId);
+        transferService.transfer(transferRequest(1L, 2L, new BigDecimal("10.00"), Currency.USD), userId);
 
         // then
         assertThat(fromAccount.getBalance()).isEqualByComparingTo("990.00");
@@ -315,12 +343,25 @@ class TransferServiceUnitTest {
     private BankAccountEntity account(Long id, UUID userId, BigDecimal balance, Currency currency, AccountStatus status) {
         return BankAccountEntity.builder()
                 .id(id)
+                .accountNumber(accountNumber(id))
                 .userId(userId)
                 .currency(currency)
                 .balance(balance)
                 .type(AccountType.CHECKING)
                 .status(status)
                 .build();
+    }
+
+    private void mockRecipientLookup(BankAccountEntity account) {
+        when(bankAccountRepository.findByAccountNumber(account.getAccountNumber())).thenReturn(Optional.of(account));
+    }
+
+    private TransferRequest transferRequest(Long fromAccountId, Long toAccountId, BigDecimal amount, Currency currency) {
+        return new TransferRequest(fromAccountId, accountNumber(toAccountId), amount, currency);
+    }
+
+    private String accountNumber(Long id) {
+        return "40817" + String.format("%015d", id);
     }
 
     private TransactionEntity transaction(Long fromAccountId, Long toAccountId, BigDecimal amount) {

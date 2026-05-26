@@ -47,20 +47,26 @@ public class TransferService {
     public UniversalResponse<TransactionDto> transfer(TransferRequest request, UUID currentUserId) {
         log.info("Request to transfer: {}", request);
 
-        if (request.getFromAccountId().equals(request.getToAccountId())) {
+        Long fromAccountId = request.getFromAccountId();
+        String toAccountNumber = normalizeAccountNumber(request.getToAccountNumber());
+        BankAccountEntity recipientAccount = bankAccountRepository.findByAccountNumber(toAccountNumber)
+                .orElseThrow(() -> new NotFoundException("Счёт получателя не найден"));
+        Long toAccountId = recipientAccount.getId();
+
+        if (fromAccountId.equals(toAccountId)) {
             throw new ConflictException("Нельзя выполнить перевод на тот же самый счёт");
         }
 
-        Long firstId = Math.min(request.getFromAccountId(), request.getToAccountId());
-        Long secondId = Math.max(request.getFromAccountId(), request.getToAccountId());
+        Long firstId = Math.min(fromAccountId, toAccountId);
+        Long secondId = Math.max(fromAccountId, toAccountId);
 
         BankAccountEntity first = bankAccountRepository.findByIdForUpdate(firstId)
                 .orElseThrow(() -> new NotFoundException("Счёт не найден: " + firstId));
         BankAccountEntity second = bankAccountRepository.findByIdForUpdate(secondId)
                 .orElseThrow(() -> new NotFoundException("Счёт не найден: " + secondId));
 
-        BankAccountEntity fromAccount = first.getId().equals(request.getFromAccountId()) ? first : second;
-        BankAccountEntity toAccount = first.getId().equals(request.getFromAccountId()) ? second : first;
+        BankAccountEntity fromAccount = first.getId().equals(fromAccountId) ? first : second;
+        BankAccountEntity toAccount = first.getId().equals(fromAccountId) ? second : first;
 
         if (!fromAccount.getUserId().equals(currentUserId)) {
             throw new ConflictException("Счёт не принадлежит текущему пользователю");
@@ -151,5 +157,9 @@ public class TransferService {
                     ex
             );
         }
+    }
+
+    private String normalizeAccountNumber(String accountNumber) {
+        return accountNumber == null ? null : accountNumber.replaceAll("\\s+", "");
     }
 }

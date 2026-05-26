@@ -40,6 +40,9 @@ public class BankAccountEntity {
     @Column(name = "id", nullable = false)
     private Long id;
 
+    @Column(name = "account_number", nullable = false, unique = true, length = 20)
+    private String accountNumber;
+
     @JdbcTypeCode(SqlTypes.UUID)
     @Column(name = "user_id", nullable = false, columnDefinition = "uuid")
     private UUID userId;

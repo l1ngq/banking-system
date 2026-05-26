@@ -22,5 +22,7 @@
              file="ddl/004--create-table-interest-accrual-log.xml"/>
     <include relativeToChangelogFile="true"
              file="ddl/005--switch-users-to-session-auth.xml"/>
+    <include relativeToChangelogFile="true"
+             file="ddl/006--add-account-number-to-bank-account.xml"/>
 
 </databaseChangeLog>
