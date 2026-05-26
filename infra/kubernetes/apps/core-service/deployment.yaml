@@ -3,13 +3,14 @@ kind: Deployment
 metadata:
   name: core-service
   namespace: banking-system
+  labels:
+    app: core-service
 spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 0
       maxSurge: 1
-  replicas: 1
   selector:
     matchLabels:
       app: core-service
@@ -18,13 +19,32 @@ spec:
       labels:
         app: core-service
     spec:
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: 40
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: DoesNotExist
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - core-service
+                topologyKey: kubernetes.io/hostname
       containers:
         - name: core-service
           image: ghcr.io/l1ngq/banking-core:latest
           envFrom:
             - configMapRef:
                 name: core-service-config
+
           env:
             - name: DATABASE_PASSWORD
               valueFrom:
@@ -43,6 +63,10 @@ spec:
                   key: redis-password
           ports:
             - containerPort: 8080
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 10"]
           resources:
             requests:
               cpu: 200m

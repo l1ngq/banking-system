@@ -9,7 +9,6 @@ spec:
     rollingUpdate:
       maxUnavailable: 0
       maxSurge: 1
-  replicas: 1
   selector:
     matchLabels:
       app: currencies-service
@@ -19,6 +18,13 @@ spec:
         app: currencies-service
     spec:
       terminationGracePeriodSeconds: 30
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: DoesNotExist
       containers:
         - name: currencies-service
           image: ghcr.io/l1ngq/banking-currencies:latest
@@ -35,7 +41,7 @@ spec:
             - containerPort: 8081
           resources:
             requests:
-              cpu: 100m
+              cpu: 200m
               memory: 512Mi
             limits:
               cpu: 500m
