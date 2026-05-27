@@ -48,6 +48,45 @@ spec:
               cpu: 500m
               memory: 512Mi
 
+        additionalPrometheusRulesMap:
+          banking-simple-alerts:
+            groups:
+              - name: banking.general.alerts
+                rules:
+                  - alert: DeploymentDown
+                    expr: kube_deployment_status_replicas_available{namespace="banking-system"} < 1
+                    for: 2m
+                    labels:
+                      severity: critical
+                    annotations:
+                      summary: "Сервис {{ $labels.deployment }} недоступен!"
+                      description: "В banking-system деплоймент {{ $labels.deployment }} не имеет доступных реплик больше 2 минут."
+
+                  - alert: PodHighMemory
+                    expr: |
+                      sum by (namespace, pod) (
+                        container_memory_working_set_bytes{namespace="banking-system", container!="", image!=""}
+                      )
+                      /
+                      sum by (namespace, pod) (
+                        kube_pod_container_resource_limits{namespace="banking-system", resource="memory", unit="byte"}
+                      ) > 0.85
+                    for: 5m
+                    labels:
+                      severity: warning
+                    annotations:
+                      summary: "Под {{ $labels.pod }} потребляет слишком много памяти"
+                      description: "Под {{ $labels.pod }} использует более 85% от заданного лимита памяти."
+
+                  - alert: ServiceNotResponding
+                    expr: up{namespace="banking-system"} == 0
+                    for: 3m
+                    labels:
+                      severity: critical
+                    annotations:
+                      summary: "Таргет {{ $labels.job }} не отвечает"
+                      description: "Прометеус не может собрать метрики с сервиса {{ $labels.job }}. Возможно, приложение зависло или не отвечает по сети."
+
         kube-state-metrics:
           resources:
             requests:
