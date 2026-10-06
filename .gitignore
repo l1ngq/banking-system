@@ -1,4 +1,6 @@
 .env
+.env.secrets
+.env.versions
 .vscode/
 .idea/
 .vault_pass
