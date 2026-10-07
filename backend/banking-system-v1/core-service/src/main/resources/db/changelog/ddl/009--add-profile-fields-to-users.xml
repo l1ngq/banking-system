@@ -4,9 +4,11 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <changeSet id="008--add-display-name-to-bank-account" author="student">
-        <addColumn tableName="bank_account" schemaName="${APP_DATABASE_SCHEMA}">
-            <column name="display_name" type="varchar(40)"/>
+    <changeSet id="009--add-profile-fields-to-users" author="student">
+        <addColumn tableName="users" schemaName="${APP_DATABASE_SCHEMA}">
+            <column name="full_name" type="varchar(60)"/>
+            <column name="phone" type="varchar(20)"/>
+            <column name="city" type="varchar(60)"/>
         </addColumn>
     </changeSet>
 

@@ -36,6 +36,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<UniversalResponse<Object>> handleGeneralException(Exception ex) {
         log.error("Handling general exception", ex);
         return ResponseEntity.status(500)
-                .body(new UniversalResponse<>(5000, "Internal Server Error: " + ex.getMessage()));
+            .body(new UniversalResponse<>(5000, "Internal Server Error"));
     }
 }

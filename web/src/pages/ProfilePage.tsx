@@ -7,7 +7,7 @@ import { getInitials, pluralize } from '../utils/formatters';
 interface ProfilePageProps {
   profile: UserProfile;
   accountsCount: number;
-  onUpdate: (payload: Partial<UserProfile>) => void;
+  onUpdate: (payload: Pick<UserProfile, 'fullName' | 'phone' | 'city'>) => Promise<boolean>;
   onThemeChange: (theme: Theme) => void;
   onToggleBalance: () => void;
   onLogout: () => void;
@@ -17,6 +17,7 @@ function ProfileForm({ profile, onUpdate }: Pick<ProfilePageProps, 'profile' | '
   const [name, setName] = useState(profile.fullName);
   const [phone, setPhone] = useState(profile.phone);
   const [city, setCity] = useState(profile.city);
+  const [saving, setSaving] = useState(false);
 
   const phoneDigits = phone.replace(/\D/g, '');
   const phoneError = phone && (phoneDigits.length < 10 || phoneDigits.length > 12) ? 'Введите номер полностью, например +7 900 123-45-67' : '';
@@ -43,10 +44,13 @@ function ProfileForm({ profile, onUpdate }: Pick<ProfilePageProps, 'profile' | '
         <button
           type="button"
           className="btn btn--primary"
-          disabled={!dirty || Boolean(phoneError) || Boolean(nameError)}
-          onClick={() => onUpdate({ fullName: name.trim(), phone: phone.trim(), city: city.trim() })}
+          disabled={!dirty || saving || Boolean(phoneError) || Boolean(nameError)}
+          onClick={() => {
+            setSaving(true);
+            void onUpdate({ fullName: name.trim(), phone: phone.trim(), city: city.trim() }).finally(() => setSaving(false));
+          }}
         >
-          Сохранить изменения
+          {saving ? 'Сохраняем…' : 'Сохранить изменения'}
         </button>
       </div>
     </div>

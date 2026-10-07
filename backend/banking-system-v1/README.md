@@ -33,19 +33,6 @@ Kafka broker запускается через `docker-compose`.
 
 `currencies-service` работает как простой сервис курсов валют на PostgreSQL.
 
-Задать или обновить курс вручную:
-
-```http
-PUT http://localhost:8081/api/currencies/rates
-Content-Type: application/json
-
-{
-  "baseCurrency": "USD",
-  "targetCurrency": "RUB",
-  "rate": 90.00
-}
-```
-
 После этого можно читать курс и выполнять конвертацию:
 
 ```http
@@ -53,7 +40,7 @@ GET http://localhost:8081/api/currencies/rate?from=USD&to=RUB
 GET http://localhost:8081/api/currencies/convert?from=USD&to=RUB&amount=10
 ```
 
-В учебном проекте endpoint `PUT /api/currencies/rates` открыт. В production такой endpoint должен быть admin-only.
+Начальные курсы задаются Liquibase-миграцией currencies-service.
 
 ## Auth
 

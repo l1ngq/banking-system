@@ -14,6 +14,14 @@ type AuthState = {
   role: string | null;
 };
 
+type BackendProfile = {
+  fullName?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  email: string;
+  role: string;
+};
+
 type BackendAccount = {
   id: number;
   accountNumber?: string;
@@ -232,8 +240,32 @@ export const coreApi = {
 
   async getProfile(): Promise<Partial<UserProfile>> {
     const auth = await this.requireSession();
+    const profile = await request<BackendProfile>(`${API_URLS.core}/api/profile`);
     return {
-      role: auth.role === 'ADMIN' ? 'admin' : 'user',
+      fullName: profile.fullName ?? '',
+      phone: profile.phone ?? '',
+      city: profile.city ?? '',
+      email: profile.email || auth.email || '',
+      role: profile.role === 'ADMIN' ? 'admin' : 'user',
+    };
+  },
+
+  async updateProfile(payload: Pick<UserProfile, 'fullName' | 'phone' | 'city'>): Promise<Partial<UserProfile>> {
+    await this.requireSession();
+    const profile = await request<BackendProfile>(`${API_URLS.core}/api/profile`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        fullName: payload.fullName.trim(),
+        phone: payload.phone.trim(),
+        city: payload.city.trim(),
+      }),
+    });
+    return {
+      fullName: profile.fullName ?? '',
+      phone: profile.phone ?? '',
+      city: profile.city ?? '',
+      email: profile.email,
+      role: profile.role === 'ADMIN' ? 'admin' : 'user',
     };
   },
 

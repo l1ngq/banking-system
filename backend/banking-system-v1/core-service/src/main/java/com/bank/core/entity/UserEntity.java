@@ -46,6 +46,15 @@ public class UserEntity {
     @Builder.Default
     private boolean enabled = true;
 
+    @Column(name = "full_name", length = 60)
+    private String fullName;
+
+    @Column(name = "phone", length = 20)
+    private String phone;
+
+    @Column(name = "city", length = 60)
+    private String city;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

@@ -132,7 +132,7 @@ export function useBankingState() {
         ...current.profile,
         ...profile,
         email: profileEmail ?? current.profile.email,
-        fullName: current.profile.fullName || getDisplayNameByEmail(profileEmail, 'Пользователь'),
+        fullName: profile.fullName || getDisplayNameByEmail(profileEmail, 'Пользователь'),
       },
     }));
 
@@ -178,7 +178,7 @@ export function useBankingState() {
             ...current.profile,
             ...profile,
             email: profileEmail ?? current.profile.email,
-            fullName: current.profile.fullName || getDisplayNameByEmail(profileEmail, 'Пользователь'),
+            fullName: profile.fullName || getDisplayNameByEmail(profileEmail, 'Пользователь'),
           },
         }));
 
@@ -277,9 +277,16 @@ export function useBankingState() {
     }));
   }
 
-  function updateProfile(payload: Partial<BankingState['profile']>) {
-    setState((current) => ({ ...current, profile: { ...current.profile, ...payload } }));
-    notify('success', 'Профиль сохранён');
+  async function updateProfile(payload: Pick<BankingState['profile'], 'fullName' | 'phone' | 'city'>) {
+    try {
+      const profile = await coreApi.updateProfile(payload);
+      setState((current) => ({ ...current, profile: { ...current.profile, ...profile } }));
+      notify('success', 'Профиль сохранён');
+      return true;
+    } catch (error) {
+      notify('error', 'Не удалось сохранить профиль', errorMessage(error));
+      return false;
+    }
   }
 
   async function renameAccount(accountId: string, name: string) {

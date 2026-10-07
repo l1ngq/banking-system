@@ -29,5 +29,7 @@
              file="ddl/007--create-table-transaction-details.xml"/>
     <include relativeToChangelogFile="true"
              file="ddl/008--add-display-name-to-bank-account.xml"/>
+    <include relativeToChangelogFile="true"
+             file="ddl/009--add-profile-fields-to-users.xml"/>
 
 </databaseChangeLog>

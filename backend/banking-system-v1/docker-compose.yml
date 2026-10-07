@@ -3,7 +3,7 @@ services:
     image: postgres:18
     container_name: postgres-core
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_DB: core_db
       POSTGRES_USER: bank
@@ -24,7 +24,7 @@ services:
     container_name: postgres-currencies
     restart: no
     ports:
-      - "5434:5432"
+      - "127.0.0.1:5434:5432"
     environment:
       POSTGRES_DB: currencies_db
       POSTGRES_USER: bank
@@ -44,7 +44,7 @@ services:
     image: redis:8.6.0
     container_name: redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     command: redis-server --maxmemory-policy volatile-ttl
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -58,7 +58,7 @@ services:
     image: confluentinc/cp-kafka:7.7.7
     container_name: kafka
     ports:
-      - "9092:9094"
+      - "127.0.0.1:9092:9094"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -91,7 +91,7 @@ services:
     container_name: currencies-service
     restart: no
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     environment:
       CURRENCIES_DATABASE_URL: jdbc:postgresql://postgres-currencies:5432/currencies_db
       DATABASE_USERNAME: bank
@@ -112,7 +112,7 @@ services:
     container_name: core-service
     restart: no
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       CORE_DATABASE_URL: jdbc:postgresql://postgres-core:5432/core_db
       DATABASE_USERNAME: bank

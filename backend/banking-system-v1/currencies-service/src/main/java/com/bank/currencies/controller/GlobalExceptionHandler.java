@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
@@ -32,10 +33,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(400).body(new UniversalResponse<>(4001, message));
     }
 
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<UniversalResponse<Object>> handleMissingResource(NoResourceFoundException ex) {
+        return ResponseEntity.status(404).body(new UniversalResponse<>(4040, "Resource not found"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<UniversalResponse<Object>> handleGeneralException(Exception ex) {
         log.error("Handling general exception", ex);
         return ResponseEntity.status(500)
-                .body(new UniversalResponse<>(5000, "Internal Server Error: " + ex.getMessage()));
+            .body(new UniversalResponse<>(5000, "Internal Server Error"));
     }
 }

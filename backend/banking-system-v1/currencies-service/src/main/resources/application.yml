@@ -8,7 +8,7 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         default_schema: ${APP_DATABASE_SCHEMA:currencies}
@@ -33,4 +33,4 @@ server:
 logging:
   level:
     root: INFO
-    com.bank: DEBUG
+    com.bank: INFO
