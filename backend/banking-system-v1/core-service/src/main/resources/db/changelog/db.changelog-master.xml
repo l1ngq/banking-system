@@ -27,5 +27,7 @@
 
     <include relativeToChangelogFile="true"
              file="ddl/007--create-table-transaction-details.xml"/>
+    <include relativeToChangelogFile="true"
+             file="ddl/008--add-display-name-to-bank-account.xml"/>
 
 </databaseChangeLog>

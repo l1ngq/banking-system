@@ -17,6 +17,7 @@ type AuthState = {
 type BackendAccount = {
   id: number;
   accountNumber?: string;
+  displayName?: string | null;
   userId?: string;
   currency: BackendCurrency;
   balance: number | string;
@@ -115,7 +116,7 @@ export function mapAccount(account: BackendAccount): Account {
 
   return {
     id: String(account.id),
-    name: defaultAccountName(type, currency),
+    name: account.displayName?.trim() || defaultAccountName(type, currency),
     number: account.accountNumber ?? makeDisplayAccountNumber(account.id),
     balance: Number(account.balance ?? 0),
     currency,
@@ -242,14 +243,24 @@ export const coreApi = {
     return (list.accounts ?? []).map(mapAccount);
   },
 
-  async createAccount(payload: Pick<Account, 'currency' | 'type'>): Promise<Account> {
+  async createAccount(payload: Pick<Account, 'currency' | 'type'> & { name?: string }): Promise<Account> {
     await this.requireSession();
     const account = await request<BackendAccount>(`${API_URLS.core}/api/accounts`, {
       method: 'POST',
       body: JSON.stringify({
         currency: toBackendCurrency(payload.currency),
         type: toBackendAccountType(payload.type),
+        displayName: payload.name?.trim() || null,
       }),
+    });
+    return mapAccount(account);
+  },
+
+  async renameAccount(accountId: string, displayName: string): Promise<Account> {
+    await this.requireSession();
+    const account = await request<BackendAccount>(`${API_URLS.core}/api/accounts/${accountId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ displayName: displayName.trim() || null }),
     });
     return mapAccount(account);
   },

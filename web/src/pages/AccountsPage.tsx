@@ -10,7 +10,7 @@ interface AccountsPageProps {
   rates: CurrencyRate[];
   onAction: (action: Action, accountId?: string, mode?: 'own' | 'external') => void;
   onRequestClose: (account: Account) => void;
-  onRename: (accountId: string, name: string) => void;
+  onRename: (accountId: string, name: string) => Promise<boolean>;
 }
 
 const CURRENCY_TOTAL_LABEL: Record<CurrencyCode, string> = { RUB: 'В рублях', USD: 'В долларах', EUR: 'В евро' };
@@ -43,9 +43,9 @@ function AccountsPage({ accounts, rates, onAction, onRequestClose, onRename }: A
     setDraft(account.name);
   }
 
-  function finishRename(save: boolean) {
+  async function finishRename(save: boolean) {
     if (save && editingId && draft.trim()) {
-      onRename(editingId, draft);
+      await onRename(editingId, draft);
     }
     setEditingId(null);
   }
@@ -128,9 +128,9 @@ function AccountsPage({ accounts, rates, onAction, onRequestClose, onRename }: A
                         maxLength={40}
                         aria-label="Название счёта"
                         onChange={(event) => setDraft(event.target.value)}
-                        onBlur={() => finishRename(true)}
+                        onBlur={() => void finishRename(true)}
                         onKeyDown={(event) => {
-                          if (event.key === 'Enter') finishRename(true);
+                          if (event.key === 'Enter') void finishRename(true);
                           if (event.key === 'Escape') finishRename(false);
                         }}
                         autoFocus

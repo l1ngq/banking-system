@@ -5,6 +5,7 @@ import com.bank.core.dto.AccountDto;
 import com.bank.core.dto.AccountListDto;
 import com.bank.core.dto.AccountOperationRequest;
 import com.bank.core.dto.CreateAccountRequest;
+import com.bank.core.dto.RenameAccountRequest;
 import com.bank.core.security.CurrentUserProvider;
 import com.bank.core.service.AccountService;
 import jakarta.validation.Valid;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,6 +46,16 @@ public class AccountController {
         log.info("Request to create account: {}", request);
         UUID userId = currentUserProvider.getCurrentUser().localUserId();
         return accountService.createAccount(request, userId);
+    }
+
+    @PatchMapping("/{accountId}")
+    @PreAuthorize("isAuthenticated()")
+    public UniversalResponse<AccountDto> renameAccount(
+            @PathVariable("accountId") Long accountId,
+            @Valid @RequestBody RenameAccountRequest request) {
+        log.info("Request to rename account by id: {}", accountId);
+        UUID userId = currentUserProvider.getCurrentUser().localUserId();
+        return accountService.renameAccount(accountId, userId, request);
     }
 
     @PostMapping("/{accountId}/deposit")

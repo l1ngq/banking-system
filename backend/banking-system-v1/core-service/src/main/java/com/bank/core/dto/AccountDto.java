@@ -19,6 +19,7 @@ public class AccountDto {
 
     private Long id;
     private String accountNumber;
+    private String displayName;
     private UUID userId;
     private Currency currency;
     private BigDecimal balance;

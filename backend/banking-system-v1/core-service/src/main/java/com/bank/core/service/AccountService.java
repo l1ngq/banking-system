@@ -11,6 +11,7 @@ import com.bank.common.exception.NotFoundException;
 import com.bank.core.dto.AccountDto;
 import com.bank.core.dto.AccountListDto;
 import com.bank.core.dto.CreateAccountRequest;
+import com.bank.core.dto.RenameAccountRequest;
 import com.bank.core.entity.BankAccountEntity;
 import com.bank.core.entity.TransactionEntity;
 import com.bank.core.entity.UserEntity;
@@ -64,6 +65,7 @@ public class AccountService {
 
         BankAccountEntity entity = BankAccountEntity.builder()
                 .accountNumber(generateAccountNumber())
+                .displayName(normalizeDisplayName(request.getDisplayName()))
                 .userId(user.getId())
                 .currency(request.getCurrency())
                 .type(request.getType())
@@ -73,6 +75,21 @@ public class AccountService {
 
         entity = bankAccountRepository.save(entity);
         return new UniversalResponse<>(accountMapper.toDto(entity));
+    }
+
+    @Transactional
+    public UniversalResponse<AccountDto> renameAccount(Long accountId, UUID currentUserId, RenameAccountRequest request) {
+        log.info("Request to rename account by id: {} for userId: {}", accountId, currentUserId);
+
+        BankAccountEntity account = bankAccountRepository.findById(accountId)
+                .orElseThrow(() -> new NotFoundException("Account not found: " + accountId));
+
+        if (!account.getUserId().equals(currentUserId)) {
+            throw new ConflictException("Account does not belong to current user");
+        }
+
+        account.setDisplayName(normalizeDisplayName(request.getDisplayName()));
+        return new UniversalResponse<>(accountMapper.toDto(bankAccountRepository.save(account)));
     }
 
     @Transactional
@@ -144,6 +161,14 @@ public class AccountService {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new ConflictException("Amount must be greater than zero");
         }
+    }
+
+    private String normalizeDisplayName(String displayName) {
+        if (displayName == null) {
+            return null;
+        }
+        String trimmed = displayName.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private String generateAccountNumber() {

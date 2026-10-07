@@ -55,12 +55,6 @@ function friendlyAuthError(error: unknown, fallback: string) {
   return message || fallback;
 }
 
-/** Названия счетов, которые дал пользователь, хранятся локально и не теряются после обновления данных. */
-function withNames(accounts: Account[], names: Record<string, string> | undefined) {
-  if (!names) return accounts;
-  return accounts.map((account) => (names[account.id] ? { ...account, name: names[account.id] } : account));
-}
-
 export function useBankingState() {
   const [state, setState] = useState<BankingState>(() => readBankingState());
   const [auth, setAuth] = useState<AuthViewState>({ status: 'checking', email: null, error: null });
@@ -90,13 +84,13 @@ export function useBankingState() {
   function updateAccountInState(account: Account) {
     setState((current) => ({
       ...current,
-      accounts: withNames(replaceAccount(current.accounts, account), current.accountNames),
+      accounts: replaceAccount(current.accounts, account),
     }));
   }
 
   async function refreshAccounts() {
-    const accounts = withNames(await coreApi.getAccounts(), state.accountNames);
-    setState((current) => ({ ...current, accounts: withNames(accounts, current.accountNames) }));
+    const accounts = await coreApi.getAccounts();
+    setState((current) => ({ ...current, accounts }));
     return accounts;
   }
 
@@ -192,7 +186,7 @@ export function useBankingState() {
         if (cancelled) return;
         setState((current) => ({ ...current, rates }));
 
-        const accounts = withNames(await coreApi.getAccounts(), saved.accountNames);
+        const accounts = await coreApi.getAccounts();
         if (cancelled) return;
         setState((current) => ({ ...current, accounts }));
 
@@ -288,23 +282,17 @@ export function useBankingState() {
     notify('success', 'Профиль сохранён');
   }
 
-  function renameAccount(accountId: string, name: string) {
+  async function renameAccount(accountId: string, name: string) {
     const trimmed = name.trim();
-    setState((current) => {
-      const accountNames = { ...(current.accountNames ?? {}) };
-      if (trimmed) {
-        accountNames[accountId] = trimmed;
-      } else {
-        delete accountNames[accountId];
-      }
-      return {
-        ...current,
-        accountNames,
-        accounts: current.accounts.map((account) =>
-          account.id === accountId && trimmed ? { ...account, name: trimmed } : account,
-        ),
-      };
-    });
+    try {
+      const account = await coreApi.renameAccount(accountId, trimmed);
+      updateAccountInState(account);
+      notify('success', 'Название счёта сохранено');
+      return true;
+    } catch (error) {
+      notify('error', 'Не удалось переименовать счёт', errorMessage(error));
+      return false;
+    }
   }
 
   async function openAccount(payload: { name: string; currency: CurrencyCode; type: Account['type'] }) {
@@ -314,13 +302,10 @@ export function useBankingState() {
     }
 
     try {
-      const account = await coreApi.createAccount({ currency: payload.currency, type: payload.type });
       const name = payload.name.trim();
-      updateAccountInState(name ? { ...account, name } : account);
-      if (name) {
-        renameAccount(account.id, name);
-      }
-      notify('success', 'Счёт открыт', name || account.name);
+      const account = await coreApi.createAccount({ currency: payload.currency, type: payload.type, name });
+      updateAccountInState(account);
+      notify('success', 'Счёт открыт', account.name);
       return true;
     } catch (error) {
       notify('error', 'Не удалось открыть счёт', errorMessage(error));

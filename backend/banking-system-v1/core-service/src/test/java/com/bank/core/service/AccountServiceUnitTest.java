@@ -393,6 +393,7 @@ class AccountServiceUnitTest {
         return new AccountDto(
                 id,
                 accountNumber(id),
+                null,
                 userId,
                 Currency.USD,
                 balance,

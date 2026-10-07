@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="012--seed-default-exchange-rates" author="student">
+        <sql splitStatements="false">
+            INSERT INTO ${APP_DATABASE_SCHEMA}.exchange_rate
+                (base_currency, target_currency, rate, updated_at)
+            VALUES
+                ('USD', 'RUB', 92.000000, NOW()),
+                ('RUB', 'USD', 0.010870, NOW()),
+                ('EUR', 'RUB', 100.000000, NOW()),
+                ('RUB', 'EUR', 0.010000, NOW()),
+                ('USD', 'EUR', 0.920000, NOW()),
+                ('EUR', 'USD', 1.086957, NOW())
+            ON CONFLICT (base_currency, target_currency)
+            DO UPDATE SET
+                rate = EXCLUDED.rate,
+                updated_at = EXCLUDED.updated_at;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
